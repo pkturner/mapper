@@ -22,6 +22,7 @@
 #ifndef OPENORIENTEERING_TRACK_H
 #define OPENORIENTEERING_TRACK_H
 
+#include <cmath>
 #include <vector>
 
 #include <QtGlobal>
@@ -48,8 +49,8 @@ struct TrackPoint
 {
 	LatLon latlon;
 	QDateTime datetime;             // QDateTime() if invalid
-	float elevation     = -9999;    // -9999 means invalid
-	float hDOP          = -1;       // -1 means invalid
+	float elevation     = NAN;      // NAN means invalid
+	float hDOP          = NAN;      // NAN means invalid
 	QString name;
 	
 	// Default special member functions are fine.
@@ -59,8 +60,8 @@ struct TrackPoint
 	TrackPoint(const TrackPoint&) = default;
 	TrackPoint(LatLon latlon,
 	           QDateTime datetime  = {},
-	           float elevation     = -9999,
-	           float hDOP          = -1 ,
+	           float elevation     = NAN,
+	           float hDOP          = NAN,
 	           QString name        = {} )
 	: latlon(latlon)
 	, datetime(datetime)

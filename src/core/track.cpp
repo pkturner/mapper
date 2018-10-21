@@ -55,9 +55,9 @@ void TrackPoint::save(QXmlStreamWriter* stream) const
 	
 	if (datetime.isValid())
 		stream->writeTextElement(QStringLiteral("time"), datetime.toString(Qt::ISODate));
-	if (elevation > -9999)
+	if (!qIsNaN(elevation))
 		stream->writeTextElement(QStringLiteral("ele"), QString::number(static_cast<qreal>(elevation), 'f', 3));
-	if (hDOP >= 0)
+	if (!qIsNaN(hDOP))
 		stream->writeTextElement(QStringLiteral("hdop"), QString::number(static_cast<qreal>(hDOP), 'f', 3));
 	if (!name.isEmpty())
 		stream->writeTextElement(QStringLiteral("name"), name);

@@ -17,6 +17,8 @@
  *    along with OpenOrienteering.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <cmath>
+
 #include <Qt>
 #include <QtGlobal>
 #include <QtTest>
@@ -114,7 +116,7 @@ private slots:
 		actual_track.appendTrackPoint(tp1);
 		QCOMPARE(signal_spy.count(), 1);
 		QCOMPARE(signal_spy.takeFirst().at(0).toInt(), int(Track::TrackPointAppended));
-		const auto tp2 = TrackPoint{ {50.1, 7.1}, base_datetime.addSecs(offset + 3), -9999, 32 };
+		const auto tp2 = TrackPoint{ {50.1, 7.1}, base_datetime.addSecs(offset + 3), NAN, 32 };
 		actual_track.appendTrackPoint(tp2);
 		QCOMPARE(signal_spy.count(), 1);
 		QCOMPARE(signal_spy.takeFirst().at(0).toInt(), int(Track::TrackPointAppended));
