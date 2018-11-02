@@ -39,20 +39,37 @@ namespace OpenOrienteering {
 
 
 /**
- * A point in a track or a waypoint, which stores position on ellipsoid and
- * map and more attributes.
+ * A geographic point with optional attributes such as time.
+ * 
+ * \see GPX `ptType`, https://www.topografix.com/GPX/1/1/#type_ptType
  */
 struct TrackPoint
 {
 	LatLon gps_coord;
+	QDateTime datetime;             // QDateTime() if invalid
+	float elevation     = -9999;    // -9999 means invalid
+	float hDOP          = -1;       // -1 means invalid
 	MapCoordF map_coord;
 	
-	QDateTime datetime;		// QDateTime() if invalid
-	float elevation;		// -9999 if invalid
-	float hDOP;				// -1 if invalid
+	// Default special member functions are fine.
+	// \todo Remove the special member functions after dropping Android gcc 4.9.
+#if __GNUC__ == 4
+	TrackPoint() = default;
+	TrackPoint(const TrackPoint&) = default;
+	TrackPoint(LatLon gps_coord,
+	           QDateTime datetime  = {},
+	           float elevation     = -9999,
+	           float hDOP          = -1,
+	           MapCoordF map_coord = {} )
+	: gps_coord(gps_coord)
+	, datetime(datetime)
+	, elevation(elevation)
+	, hDOP(hDOP)
+	, map_coord(map_coord)
+	{}
+	~TrackPoint() = default;
+#endif
 	
-	TrackPoint(LatLon coord = LatLon(), const QDateTime& datetime = QDateTime(),
-			   float elevation = -9999, float hDOP = -1);
 	void save(QXmlStreamWriter* stream) const;
 };
 
