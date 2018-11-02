@@ -105,6 +105,8 @@ public:
 	inline Track& getTrack() {return track;}
 	
 public slots:
+	void trackChanged(Track::TrackChange change, const TrackPoint& point);
+	
 	void updateGeoreferencing();
 	
 protected:
