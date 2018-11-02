@@ -32,7 +32,6 @@
 #include "core/map_coord.h"
 
 class QFile;
-class QWidget;
 class QXmlStreamWriter;
 
 namespace OpenOrienteering {
@@ -88,7 +87,8 @@ class Track
 {
 public:
 	/// Constructs an empty track
-	Track();
+	Track() = default;
+	
 	Track(const Georeferencing& map_georef);
 	/// Duplicates a track
 	Track(const Track& other);
@@ -100,7 +100,7 @@ public:
 	
 	/// Attempts to load the track from the given file.
 	/// If you choose not to project_point, you have to call changeProjectionParams() afterwards.
-	bool loadFrom(const QString& path, bool project_points, QWidget* dialog_parent = nullptr);
+	bool loadFrom(const QString& path, bool project_points);
 	/// Attempts to save the track to the given file
 	bool saveTo(const QString& path) const;
 	
@@ -112,7 +112,7 @@ public:
 	 * The point's map coordinates are determined from its geographic coodinates
 	 * according to the map's georeferencing.
 	 */
-	void appendTrackPoint(TrackPoint& point);
+	void appendTrackPoint(const TrackPoint& point);
 	
 	/**
 	 * Marks the current track segment as finished, so the next added point
@@ -126,10 +126,10 @@ public:
 	 * The point's map coordinates are determined from its geographic coodinates
 	 * according to the map's georeferencing.
 	 */
-	void appendWaypoint(TrackPoint& point, const QString& name);
+	void appendWaypoint(const TrackPoint& point, const QString& name);
 	
 	/** Updates the map positions of all points based on the new georeferencing. */
-	void changeMapGeoreferencing(const Georeferencing& new_georef);
+	void changeMapGeoreferencing(const Georeferencing& new_map_georef);
 	
 	// Getters
 	int getNumSegments() const;
@@ -147,7 +147,7 @@ public:
 	Track& operator=(const Track& rhs);
 	
 private:
-	bool loadFromGPX(QFile* file, bool project_points, QWidget* dialog_parent);
+	bool loadFromGPX(QFile* file, bool project_points);
 	
 	void projectPoints();
 	
@@ -159,7 +159,7 @@ private:
 	// The indices of the first points of every track segment in this track
 	std::vector<int> segment_starts;
 	
-	bool current_segment_finished;
+	bool current_segment_finished = true;
 	
 	Georeferencing map_georef;
 	
