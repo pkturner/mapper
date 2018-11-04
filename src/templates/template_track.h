@@ -91,10 +91,10 @@ public:
 	
 	
 	/// Draws all tracks.
-	void drawTracks(QPainter* painter, bool on_screen) const;
+	void drawTracks(QPainter* painter, bool on_screen, qreal opacity) const;
 	
 	/// Draws all waypoints.
-	void drawWaypoints(QPainter* painter) const;
+	void drawWaypoints(QPainter* painter, qreal opacity) const;
 	
 	/// Import the track as map object(s), returns true if something has been imported.
 	/// TODO: should this be moved to the Track class?
