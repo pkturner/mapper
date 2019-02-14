@@ -541,7 +541,7 @@ void Georeferencing::setProjectedRefPoint(QPointF point, bool update_grivation)
 				geographic_ref_point = new_geo_ref_point;
 				if (update_grivation)
 					updateGrivation();
-				else
+				else if (isValid())
 					initDeclination();
 				emit projectionChanged();
 			}
@@ -603,7 +603,7 @@ void Georeferencing::setGeographicRefPoint(LatLon lat_lon, bool update_grivation
 			projected_ref_point = new_projected_ref;
 			if (update_grivation)
 				updateGrivation();
-			else
+			else if (isValid())
 				initDeclination();
 			updateTransformation();
 			emit projectionChanged();
