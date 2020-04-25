@@ -228,9 +228,8 @@ void GeoreferencingTest::testGridScaleFactor()
 	{
 		QCOMPARE(geod_distance, elevation_scale_factor * ground_distance);
 	}
-
-	// Finally, see that the auxiliary scale factor is preserved when
-	// the CRS changes.
+	
+	// See that the auxiliary scale factor is preserved when the CRS changes.
 	georef.setProjectedCRS(QString::fromLatin1(QTest::currentDataTag()), utm32_spec);
 	QVERIFY2(georef.isValid(), georef.getErrorText().toLatin1());
 	QCOMPARE(georef.getAuxiliaryScaleFactor(), elevation_scale_factor);
@@ -240,6 +239,19 @@ void GeoreferencingTest::testGridScaleFactor()
 	{
 		QCOMPARE(geod_distance, elevation_scale_factor * ground_distance);
 	}
+	
+	// The transformation between map coordinates and projected coordinates
+	// must be preserved when switching from projected to local and back.
+	georef.setProjectedCRS(QString::fromLatin1(QTest::currentDataTag()), spec);
+	georef.setDeclination(20.0);
+	auto const map_coord = georef.toMapCoordF(sw);
+	georef.setState(Georeferencing::Local);
+	QVERIFY(georef.getProjectedCRSSpec().isEmpty());
+	if (QLineF(georef.toProjectedCoords(map_coord), sw).length() >= 0.000001)
+		QCOMPARE(georef.toProjectedCoords(map_coord), sw);
+	georef.setProjectedCRS(QString::fromLatin1(QTest::currentDataTag()), spec);
+	if (QLineF(georef.toProjectedCoords(map_coord), sw).length() >= 0.000001)
+		QCOMPARE(georef.toProjectedCoords(map_coord), sw);
 }
 
 void GeoreferencingTest::testCRS_data()
