@@ -71,6 +71,7 @@
 #include "core/georeferencing.h"
 #include "core/latlon.h"
 #include "core/map.h"
+#include "core/map_printer.h"
 #include "gui/main_window.h"
 #include "gui/map/map_editor.h"
 #include "gui/map/rotate_map_dialog.h"

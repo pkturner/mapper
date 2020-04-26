@@ -1235,6 +1235,13 @@ void MapWidget::enableTouchCursor(bool enabled)
 	}
 }
 
+void MapWidget::shiftViewCenter(const QTransform& shift)
+{
+	auto const initial_view_center = MapCoordF(view->center());
+	auto const shifted_view_center = MapCoordF(shift.map(QPointF(initial_view_center)));
+	view->setCenter(MapCoord(shifted_view_center));
+}	
+
 void MapWidget::focusOutEvent(QFocusEvent* event)
 {
 	if (tool)

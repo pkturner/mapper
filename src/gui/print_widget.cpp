@@ -972,6 +972,14 @@ void PrintWidget::onVisibilityChanged()
 	map_printer->setSimulateOverprinting(main_view->isOverprintingSimulationEnabled());
 }
 
+// slot
+void PrintWidget::shiftPrintArea(const QTransform& shift)
+{
+	auto print_area = map_printer->getPrintArea();
+	print_area.moveCenter(shift.map(print_area.center()));
+	map_printer->setPrintArea(print_area);
+}
+
 void PrintWidget::updateResolutions(const QPrinterInfo* target) const
 {
 	static const QList<int> default_resolutions(QList<int>() << 150 << 300 << 600 << 1200);

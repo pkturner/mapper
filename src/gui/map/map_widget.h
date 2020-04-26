@@ -354,6 +354,9 @@ public slots:
 	/** Enables or disables the touch cursor. */
 	void enableTouchCursor(bool enabled);
 	
+	/** Shifts the map view, without rotating or scaling the viewed rectangle. */
+	void shiftViewCenter(const QTransform &shift);
+	
 signals:
 	/**
 	 * Support function for input methods.

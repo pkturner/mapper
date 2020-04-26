@@ -253,8 +253,10 @@ QString OpenOrienteeringObjects()
 
 MapEditorController::MapEditorController(OperatingMode mode, Map* map, MapView* map_view)
 : MainWindowController()
+, map_widget(nullptr)
 , mobile_mode(Settings::getInstance().touchModeEnabled())
 , active_symbol(nullptr)
+, print_widget(nullptr)
 , template_list_widget(nullptr)
 , mappart_remove_act(nullptr)
 , mappart_merge_act(nullptr)
@@ -2331,6 +2333,10 @@ void MapEditorController::editGeoreferencing()
 		auto* dialog = new GeoreferencingDialog(this); 
 		georeferencing_dialog.reset(dialog);
 		connect(dialog, &QDialog::finished, this, &MapEditorController::georeferencingDialogFinished);
+		if (map_widget)
+			connect(dialog, &GeoreferencingDialog::mapObjectsShifted, map_widget, &MapWidget::shiftViewCenter);
+		if (print_widget)
+			connect(dialog, &GeoreferencingDialog::mapObjectsShifted, print_widget, &PrintWidget::shiftPrintArea);
 	}
 	georeferencing_dialog->exec();
 }

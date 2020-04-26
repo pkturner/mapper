@@ -125,6 +125,9 @@ public slots:
 	/** Listens to view feature changes. */
 	void onVisibilityChanged();
 	
+	/** Shifts the print area center, without rotating or scaling the rectangle. */
+	void shiftPrintArea(const QTransform &shift);
+
 signals:
 	/**
 	 * This signal is emitted when the type of task changes.

@@ -185,6 +185,13 @@ public:
 	 */
 	void accept() override;
 	
+signals:
+	/**
+	 * Indicates that objects have been rotated, scaled, and/or shifted
+	 * in relation to map coordinates.
+	 */
+	void mapObjectsShifted(const QTransform &shift);
+
 protected:
 	/**
 	 * Updates enabled / disabled states of all widgets.
