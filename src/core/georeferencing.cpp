@@ -61,7 +61,6 @@ namespace literal
 	static const QLatin1String scale("scale");
 	static const QLatin1String grid_scale_factor{"grid_scale_factor"};
 	static const QLatin1String auxiliary_scale_factor{"auxiliary_scale_factor"};
-	static const QLatin1String fake_grid_scale_factor{"fake_grid_scale_factor"};
 	static const QLatin1String declination("declination");
 	static const QLatin1String grivation("grivation");
 	
@@ -489,16 +488,7 @@ void Georeferencing::load(QXmlStreamReader& xml, bool load_scale_only)
 			auxiliary_scale_factor = roundScaleFactor(georef_element.attribute<double>(literal::auxiliary_scale_factor));
 			if (auxiliary_scale_factor <= 0.0)
 				throw FileFormatException(tr("Invalid auxiliary scale factor: %1").arg(QString::number(auxiliary_scale_factor)));
-		}
-		if (georef_element.hasAttribute(literal::fake_grid_scale_factor))
-		{
-			// Normally, grid_scale_factor is derived automatically in updateGridCompensation(),
-			// but when switching from normal to local state, we retain the old value.
-			// For numerical stability, we slight increase precision.
-			grid_scale_factor = roundScaleFactor(16*georef_element.attribute<double>(literal::fake_grid_scale_factor))/16;
-			if (grid_scale_factor <= 0.0)
-				throw FileFormatException(tr("Invalid grid scale factor: %1").arg(QString::number(grid_scale_factor)));
-			combined_scale_factor = roundScaleFactor(auxiliary_scale_factor * grid_scale_factor);
+			grid_scale_factor = combined_scale_factor/auxiliary_scale_factor;
 		}
 		if (georef_element.hasAttribute(literal::declination))
 			declination = roundDeclination(georef_element.attribute<double>(literal::declination));
@@ -620,8 +610,6 @@ void Georeferencing::save(QXmlStreamWriter& xml) const
 		if (combined_scale_factor != 1.0)
 			georef_element.writeAttribute(literal::grid_scale_factor, combined_scale_factor, scaleFactorPrecision());
 		georef_element.writeAttribute(literal::auxiliary_scale_factor, auxiliary_scale_factor, scaleFactorPrecision());
-		if (isLocal() && grid_scale_factor != 1.0)
-			georef_element.writeAttribute(literal::fake_grid_scale_factor, grid_scale_factor, scaleFactorPrecision()+1);
 	}
 	if (!qIsNull(declination))
 		georef_element.writeAttribute(literal::declination, declination, declinationPrecision());
