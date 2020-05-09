@@ -192,7 +192,7 @@ GeoreferencingDialog::GeoreferencingDialog(
 	
 	keep_projected_radio = new QRadioButton(tr("Projected coordinates"));
 	keep_geographic_radio = new QRadioButton(tr("Geographic coordinates"));
-	if (georef->getState() == Georeferencing::Normal && georef->isValid())
+	if (georef->getGeographicRefPoint() != LatLon() || (georef->getState() == Georeferencing::Normal && georef->isValid()))
 	{
 		keep_geographic_radio->setChecked(true);
 	}
@@ -278,6 +278,11 @@ GeoreferencingDialog::GeoreferencingDialog(
 	layout->addWidget(buttons_box);
 	
 	setLayout(layout);
+
+	// A Local georeferencing can know where on Earth it belongs.
+	LatLon latlon = georef->getGeographicRefPoint();
+	lat_edit->setValue(latlon.latitude());
+	lon_edit->setValue(latlon.longitude());
 	
 	connect(crs_selector, &CRSSelector::crsChanged, this, &GeoreferencingDialog::crsEdited);
 	
@@ -330,8 +335,13 @@ void GeoreferencingDialog::georefStateChanged()
 	{
 	case Georeferencing::Local:
 		crs_selector->setCurrentItem(Georeferencing::Local);
-		keep_geographic_radio->setEnabled(false);
-		keep_projected_radio->setChecked(true);
+		if (georef->getGeographicRefPoint() != LatLon())
+			keep_geographic_radio->setEnabled(true);
+		else
+		{
+			keep_geographic_radio->setEnabled(false);
+			keep_projected_radio->setChecked(true);
+		}
 		break;
 	default:
 		qDebug() << "Unhandled georeferencing state:" << georef->getState();
