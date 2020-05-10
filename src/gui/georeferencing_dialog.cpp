@@ -1,6 +1,6 @@
 /*
  *    Copyright 2012, 2013 Thomas Schöps
- *    Copyright 2012-2019 Kai Pastor
+ *    Copyright 2012-2020 Kai Pastor
  *
  *    This file is part of OpenOrienteering.
  *
@@ -278,11 +278,6 @@ GeoreferencingDialog::GeoreferencingDialog(
 	layout->addWidget(buttons_box);
 	
 	setLayout(layout);
-
-	// A Local georeferencing can know where on Earth it belongs.
-	LatLon latlon = georef->getGeographicRefPoint();
-	lat_edit->setValue(latlon.latitude());
-	lon_edit->setValue(latlon.longitude());
 	
 	connect(crs_selector, &CRSSelector::crsChanged, this, &GeoreferencingDialog::crsEdited);
 	
@@ -336,7 +331,10 @@ void GeoreferencingDialog::georefStateChanged()
 	case Georeferencing::Local:
 		crs_selector->setCurrentItem(Georeferencing::Local);
 		if (georef->getGeographicRefPoint() != LatLon())
+		{
 			keep_geographic_radio->setEnabled(true);
+			updateGeographicRefPoint(georef->getGeographicRefPoint());
+		}
 		else
 		{
 			keep_geographic_radio->setEnabled(false);
@@ -378,10 +376,7 @@ void GeoreferencingDialog::transformationChanged()
 // slot
 void GeoreferencingDialog::projectionChanged()
 {
-	ScopedMultiSignalsBlocker block(
-	            crs_selector,
-	            lat_edit, lon_edit
-	);
+	ScopedMultiSignalsBlocker block(crs_selector);
 	
 	if (georef->getState() == Georeferencing::Normal)
 	{
@@ -399,21 +394,7 @@ void GeoreferencingDialog::projectionChanged()
 		}
 	}
 	
-	LatLon latlon = georef->getGeographicRefPoint();
-	double latitude  = latlon.latitude();
-	double longitude = latlon.longitude();
-	setValueIfChanged(lat_edit, latitude);
-	setValueIfChanged(lon_edit, longitude);
-	QString osm_link =
-	  QString::fromLatin1("http://www.openstreetmap.org/?lat=%1&lon=%2&zoom=18&layers=M").
-	  arg(latitude).arg(longitude);
-	QString worldofo_link =
-	  QString::fromLatin1("http://maps.worldofo.com/?zoom=15&lat=%1&lng=%2").
-	  arg(latitude).arg(longitude);
-	link_label->setText(
-	  tr("<a href=\"%1\">OpenStreetMap</a> | <a href=\"%2\">World of O Maps</a>").
-	  arg(osm_link, worldofo_link)
-	);
+	updateGeographicRefPoint(georef->getGeographicRefPoint());
 	
 	QString error = georef->getErrorText();
 	if (error.length() == 0)
@@ -597,6 +578,26 @@ void GeoreferencingDialog::updateWidgets()
 	updateDeclinationButton();
 	
 	buttons_box->button(QDialogButtonBox::Ok)->setEnabled(georef->isValid());
+}
+
+void GeoreferencingDialog::updateGeographicRefPoint(const LatLon& latlon)
+{
+	auto const latitude  = latlon.latitude();
+	auto const longitude = latlon.longitude();
+	QString osm_link =
+	  QString::fromLatin1("http://www.openstreetmap.org/?lat=%1&lon=%2&zoom=18&layers=M").
+	  arg(latitude).arg(longitude);
+	QString worldofo_link =
+	  QString::fromLatin1("http://maps.worldofo.com/?zoom=15&lat=%1&lng=%2").
+	  arg(latitude).arg(longitude);
+	link_label->setText(
+	  tr("<a href=\"%1\">OpenStreetMap</a> | <a href=\"%2\">World of O Maps</a>").
+	  arg(osm_link, worldofo_link)
+	);
+	
+	ScopedMultiSignalsBlocker block(lat_edit, lon_edit);
+	setValueIfChanged(lat_edit, latitude);
+	setValueIfChanged(lon_edit, longitude);
 }
 
 void GeoreferencingDialog::updateDeclinationButton()
