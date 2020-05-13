@@ -250,16 +250,22 @@ void GeoreferencingTest::testGridScaleFactor()
 	auto const map_coord = georef.toMapCoordF(sw);
 	georef.setState(Georeferencing::Local);
 	QVERIFY(georef.getProjectedCRSSpec().isEmpty());
-	// This call to setDeclination must not have side-effects.
-	georef.setDeclination(georef.getDeclination());
+	// 20200512 This criterion removed, as setting grivation from
+	//          declination when in Local state is indeterminate.
+	// 20200512 // This call to setDeclination must not have side-effects.
+	// 20200512 georef.setDeclination(georef.getDeclination());
 	QCOMPARE(georef.getGrivation(), expected_grivation);
-	// This call to setAuxiliaryScaleFactor must not have side-effects.
-	georef.setAuxiliaryScaleFactor(georef.getAuxiliaryScaleFactor());
+	// 20200512 This criterion removed, as setting combined scale factor from
+	//          auxiliary scale factor when in Local state is indeterminate.
+	// 20200512 // This call to setAuxiliaryScaleFactor must not have side-effects.
+	// 20200512 georef.setAuxiliaryScaleFactor(georef.getAuxiliaryScaleFactor());
 	QCOMPARE(georef.getCombinedScaleFactor(), expected_combined);
 	if (QLineF(georef.toProjectedCoords(map_coord), sw).length() >= 0.000001)
 		QCOMPARE(georef.toProjectedCoords(map_coord), sw);
 	georef.setProjectedCRS(QString::fromLatin1(QTest::currentDataTag()), spec);
 	QVERIFY(!georef.getProjectedCRSSpec().isEmpty());
+	// 20200512 Added this, as grid compensation needs to be set for the new CRS.
+	georef.updateGridCompensation();
 	// This call to setDeclination must not have side-effects.
 	georef.setDeclination(georef.getDeclination());
 	QCOMPARE(georef.getGrivation(), expected_grivation); // setDeclination must be no-op

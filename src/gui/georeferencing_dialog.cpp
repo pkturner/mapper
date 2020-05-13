@@ -514,12 +514,13 @@ void GeoreferencingDialog::accept()
 {
 	auto const declination_change_degrees = georef->getDeclination() - initial_georef->getDeclination();
 	auto const scale_factor_change = georef->getAuxiliaryScaleFactor() / initial_georef->getAuxiliaryScaleFactor();
-	if (grivation_locked)
+	if (grivation_locked && georef->isValid() && georef->getState() == Georeferencing::Normal)
 	{
 		georef->updateGrivation();
 	}
-	else if (!qIsNull(declination_change_degrees)
-	         && (map->getNumObjects() > 0 || map->getNumTemplates() > 0))
+	if ( !grivation_locked &&
+		 !qIsNull(declination_change_degrees) &&
+		 (map->getNumObjects() > 0 || map->getNumTemplates() > 0) )
 	{
 		int result = QMessageBox::question(this, tr("Declination change"), tr("The declination has been changed. Do you want to rotate the map content accordingly, too?"), QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
 		if (result == QMessageBox::Cancel)
@@ -539,12 +540,13 @@ void GeoreferencingDialog::accept()
 				return;
 		}
 	}
-	if (scale_factor_locked)
+	if (scale_factor_locked && georef->isValid() && georef->getState() == Georeferencing::Normal)
 	{
 		georef->updateCombinedScaleFactor();
 	}
-	else if (!qIsNull(std::log(scale_factor_change))
-	         && (map->getNumObjects() > 0 || map->getNumTemplates() > 0))
+	if ( !scale_factor_locked &&
+		 !qIsNull(std::log(scale_factor_change)) &&
+		 (map->getNumObjects() > 0 || map->getNumTemplates() > 0) )
 	{
 		int result = QMessageBox::question(this, tr("Scale factor change"), tr("The scale factor has been changed. Do you want to stretch/shrink the map content accordingly, too?"), QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
 		if (result == QMessageBox::Cancel)
