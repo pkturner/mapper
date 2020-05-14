@@ -258,6 +258,7 @@ void GeoreferencingTest::testGridScaleFactor()
 	QCOMPARE(georef.getCombinedScaleFactor(), expected_combined);
 	if (QLineF(georef.toProjectedCoords(map_coord), sw).length() >= 0.000001)
 		QCOMPARE(georef.toProjectedCoords(map_coord), sw);
+	// Switch back to the original CRS, and check the transformation.
 	georef.setProjectedCRS(QString::fromLatin1(QTest::currentDataTag()), spec);
 	QVERIFY(!georef.getProjectedCRSSpec().isEmpty());
 	// This call to setDeclination must not have side-effects.

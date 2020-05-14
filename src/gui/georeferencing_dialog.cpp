@@ -192,7 +192,7 @@ GeoreferencingDialog::GeoreferencingDialog(
 	
 	keep_projected_radio = new QRadioButton(tr("Projected coordinates"));
 	keep_geographic_radio = new QRadioButton(tr("Geographic coordinates"));
-	if (georef->getState() == Georeferencing::Normal && georef->isValid())
+	if (georef->getGeographicRefPoint() != LatLon() || (georef->getState() == Georeferencing::Normal && georef->isValid()))
 	{
 		keep_geographic_radio->setChecked(true);
 	}
@@ -278,6 +278,11 @@ GeoreferencingDialog::GeoreferencingDialog(
 	layout->addWidget(buttons_box);
 	
 	setLayout(layout);
+
+	// A Local georeferencing can know where on Earth it belongs.
+	LatLon latlon = georef->getGeographicRefPoint();
+	lat_edit->setValue(latlon.latitude());
+	lon_edit->setValue(latlon.longitude());
 	
 	connect(crs_selector, &CRSSelector::crsChanged, this, &GeoreferencingDialog::crsEdited);
 	
@@ -330,8 +335,13 @@ void GeoreferencingDialog::georefStateChanged()
 	{
 	case Georeferencing::Local:
 		crs_selector->setCurrentItem(Georeferencing::Local);
-		keep_geographic_radio->setEnabled(false);
-		keep_projected_radio->setChecked(true);
+		if (georef->getGeographicRefPoint() != LatLon())
+			keep_geographic_radio->setEnabled(true);
+		else
+		{
+			keep_geographic_radio->setEnabled(false);
+			keep_projected_radio->setChecked(true);
+		}
 		break;
 	default:
 		qDebug() << "Unhandled georeferencing state:" << georef->getState();
@@ -514,12 +524,13 @@ void GeoreferencingDialog::accept()
 {
 	auto const declination_change_degrees = georef->getDeclination() - initial_georef->getDeclination();
 	auto const scale_factor_change = georef->getAuxiliaryScaleFactor() / initial_georef->getAuxiliaryScaleFactor();
-	if (grivation_locked)
+	if (grivation_locked && georef->isValid() && georef->getState() == Georeferencing::Normal)
 	{
 		georef->updateGrivation();
 	}
-	else if (!qIsNull(declination_change_degrees)
-	         && (map->getNumObjects() > 0 || map->getNumTemplates() > 0))
+	if ( !grivation_locked &&
+		 !qIsNull(declination_change_degrees) &&
+		 (map->getNumObjects() > 0 || map->getNumTemplates() > 0) )
 	{
 		int result = QMessageBox::question(this, tr("Declination change"), tr("The declination has been changed. Do you want to rotate the map content accordingly, too?"), QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
 		if (result == QMessageBox::Cancel)
@@ -539,12 +550,13 @@ void GeoreferencingDialog::accept()
 				return;
 		}
 	}
-	if (scale_factor_locked)
+	if (scale_factor_locked && georef->isValid() && georef->getState() == Georeferencing::Normal)
 	{
 		georef->updateCombinedScaleFactor();
 	}
-	else if (!qIsNull(std::log(scale_factor_change))
-	         && (map->getNumObjects() > 0 || map->getNumTemplates() > 0))
+	if ( !scale_factor_locked &&
+		 !qIsNull(std::log(scale_factor_change)) &&
+		 (map->getNumObjects() > 0 || map->getNumTemplates() > 0) )
 	{
 		int result = QMessageBox::question(this, tr("Scale factor change"), tr("The scale factor has been changed. Do you want to stretch/shrink the map content accordingly, too?"), QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
 		if (result == QMessageBox::Cancel)
