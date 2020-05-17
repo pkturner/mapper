@@ -150,6 +150,7 @@ bool OCAD8FileImport::importImplementation()
 	georef.setProjectedRefPoint(QPointF(file->setup->offsetx, file->setup->offsety));
 	if (qAbs(file->setup->angle) >= 0.01) /* degrees */
 	{
+		georef.setDeclination(file->setup->angle);
 		georef.setGrivation(file->setup->angle);
 	}
 	map->setGeoreferencing(georef);

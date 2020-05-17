@@ -853,7 +853,11 @@ void OcdGeorefFields::setupGeoref(Georeferencing& georef,
 	QPointF proj_ref_point(x, y);
 	georef.setProjectedRefPoint(proj_ref_point, false, false);
 	georef.setCombinedScaleFactor(1.0);
+	if (georef.isLocal())
+		georef.setAuxiliaryScaleFactor(1.0);
 	georef.setGrivation(qIsFinite(a) ? a : 0);
+	if (georef.isLocal())
+		georef.setDeclination(georef.getGrivation());
 }
 
 OcdGeorefFields OcdGeorefFields::fromGeoref(const Georeferencing& georef,

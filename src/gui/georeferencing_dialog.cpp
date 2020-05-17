@@ -505,10 +505,7 @@ void GeoreferencingDialog::accept()
 {
 	auto const declination_change_degrees = georef->getDeclination() - initial_georef->getDeclination();
 	auto const scale_factor_change = georef->getAuxiliaryScaleFactor() / initial_georef->getAuxiliaryScaleFactor();
-	if (grivation_locked && georef->isValid() && georef->getState() == Georeferencing::Normal)
-	{
-		georef->updateGrivation();
-	}
+	georef->updateGrivation();
 	if ( !grivation_locked &&
 		 !qIsNull(declination_change_degrees) &&
 		 (map->getNumObjects() > 0 || map->getNumTemplates() > 0) )
@@ -531,10 +528,7 @@ void GeoreferencingDialog::accept()
 				return;
 		}
 	}
-	if (scale_factor_locked && georef->isValid() && georef->getState() == Georeferencing::Normal)
-	{
-		georef->updateCombinedScaleFactor();
-	}
+	georef->updateCombinedScaleFactor();
 	if ( !scale_factor_locked &&
 		 !qIsNull(std::log(scale_factor_change)) &&
 		 (map->getNumObjects() > 0 || map->getNumTemplates() > 0) )
@@ -683,6 +677,12 @@ void GeoreferencingDialog::auxiliaryFactorEdited(double value)
 		scale_factor_locked = false;
 		updateCombinedFactor();
 	}
+	if (georef->isLocal())
+	{
+		// Enable control over combined scale factor, even though the lack of
+		// a CRS decouples it from auxiliary scale factor.
+		georef->setCombinedScaleFactor(value);
+	}
 	georef->setAuxiliaryScaleFactor(value);
 	reset_button->setEnabled(true);
 }
@@ -749,6 +749,12 @@ void GeoreferencingDialog::declinationEdited(double value)
 	{
 		grivation_locked = false;
 		updateGrivation();
+	}
+	if (georef->isLocal())
+	{
+		// Enable control over grivation, even though the lack of
+		// a CRS decouples it from declination.
+		georef->setGrivation(value);
 	}
 	georef->setDeclination(value);
 	reset_button->setEnabled(true);

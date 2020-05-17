@@ -346,6 +346,7 @@ void OcdFileImport::importGeoreferencing(const OcdFile<Ocd::FormatV8>& file)
 	Georeferencing georef;
 	georef.setScaleDenominator(qRound(setup->map_scale));
 	georef.setProjectedRefPoint(QPointF(setup->real_offset_x, setup->real_offset_y));
+	georef.setDeclination(qIsFinite(setup->real_angle) ? setup->real_angle : 0);
 	georef.setGrivation(qIsFinite(setup->real_angle) ? setup->real_angle : 0);
 	map->setGeoreferencing(georef);
 }

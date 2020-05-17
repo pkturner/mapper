@@ -984,6 +984,7 @@ ogr::unique_srs OgrFileImport::importGeoreferencing(OGRDataSourceH data_source)
 		auto georef = Georeferencing();
 		georef.setScaleDenominator(int(map->getScaleDenominator()));
 		georef.setDeclination(map->getGeoreferencing().getDeclination());
+		georef.setGrivation(map->getGeoreferencing().getDeclination());
 		map->setGeoreferencing(georef);
 		return local_srs ? std::move(local_srs) : srsFromMap();
 	}

@@ -747,7 +747,8 @@ void Georeferencing::setCombinedScaleFactor(double value)
 {
 	Q_ASSERT(value > 0);
 	double combined_scale_factor = roundScaleFactor(value);
-	double auxiliary_scale_factor = roundScaleFactor(value / grid_scale_factor);
+	bool has_CRS = isValid() && !isLocal();
+	double auxiliary_scale_factor = has_CRS ? roundScaleFactor(value / grid_scale_factor) : this->auxiliary_scale_factor;
 	setScaleFactors(combined_scale_factor, auxiliary_scale_factor);
 }
 
@@ -755,7 +756,8 @@ void Georeferencing::setAuxiliaryScaleFactor(double value)
 {
 	Q_ASSERT(value > 0);
 	double auxiliary_scale_factor = roundScaleFactor(value);
-	double combined_scale_factor = roundScaleFactor(value * grid_scale_factor);
+	bool has_CRS = isValid() && !isLocal();
+	double combined_scale_factor = has_CRS ? roundScaleFactor(value * grid_scale_factor) : this->combined_scale_factor;
 	setScaleFactors(combined_scale_factor, auxiliary_scale_factor);
 }
 
@@ -777,14 +779,16 @@ void Georeferencing::setScaleFactors(double combined_scale_factor, double auxili
 void Georeferencing::setDeclination(double value)
 {
 	double declination = roundDeclination(value);
-	double grivation = roundDeclination(value - convergence);
+	bool has_CRS = isValid() && !isLocal();
+	double grivation = has_CRS ? roundDeclination(value - convergence) : this->grivation;
 	setDeclinationAndGrivation(declination, grivation);
 }
 
 void Georeferencing::setGrivation(double value)
 {
 	double grivation = roundDeclination(value);
-	double declination = roundDeclination(value + convergence);
+	bool has_CRS = isValid() && !isLocal();
+	double declination = has_CRS ? roundDeclination(value + convergence) : this->declination;
 	setDeclinationAndGrivation(declination, grivation);
 }
 
