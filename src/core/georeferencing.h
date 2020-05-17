@@ -123,6 +123,20 @@ public:
 	};
 	
 	
+	/// Georeferencing parameter update option
+	enum UpdateOption
+	{
+		/// Do not update parameter value.
+		NoUpdate                  = 0,
+		
+		/// Update grivation, combined scale factor, or projected reference point.
+		UpdateGridParameter       = 1,
+		
+		/// Update declination, auxiliary scale factor, or geographic reference point.
+		UpdateGeographicParameter = 2
+	};
+	
+	
 	/**
 	 * A shared PROJ specification of a WGS84 geographic CRS.
 	 */
@@ -384,7 +398,8 @@ public:
 	 * point, the convergence, the grivation, the transformations, and the
 	 * scale factors.
 	 */
-	void setProjectedRefPoint(const QPointF& point, bool update_grivation = true, bool update_scale_factor = true);
+	void setProjectedRefPoint(const QPointF& point, UpdateOption update_grivation = UpdateGridParameter,
+													UpdateOption update_scale_factor = UpdateGridParameter);
 	
 	
 	/**
@@ -453,7 +468,8 @@ public:
 	 * point, the convergence, the grivation, the transformations, and the
 	 * scale factors.
 	 */
-	void setGeographicRefPoint(LatLon lat_lon, bool update_grivation = true, bool update_scale_factor = true);
+	void setGeographicRefPoint(LatLon lat_lon, UpdateOption update_grivation = UpdateGridParameter,
+											   UpdateOption update_scale_factor = UpdateGridParameter);
 	
 	
 	/** 
