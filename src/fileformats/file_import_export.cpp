@@ -150,7 +150,7 @@ void Importer::validate()
 		auto const expected = georef.getProjectedRefPoint();
 		auto const actual = georef.toProjectedCoords(georef.getGeographicRefPoint());
 		auto const offset = QLineF(actual, expected).length();
-		if (offset > 0.9)
+		if (offset > 0.8)
 		{
 			addWarning(::OpenOrienteering::Importer::tr("Georeferencing mismatch:") + QChar::Space +
 			           ::OpenOrienteering::Importer::tr("Data may appear shifted by %1 m.").arg(qCeil(offset)) + QChar::Space +
