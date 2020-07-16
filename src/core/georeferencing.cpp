@@ -843,21 +843,49 @@ void Georeferencing::setDeclinationAndGrivation(double declination, double griva
 	}
 }
 
-void Georeferencing::setMapRefPoint(const MapCoord& point)
+bool Georeferencing::setMapRefPoint(const MapCoord& point, bool keep_georeferencing)
 {
 	if (map_ref_point != point)
 	{
 		map_ref_point = point;
-		updateTransformation();
+		if (!keep_georeferencing)
+		{
+			updateTransformation();
+		}
+		else
+		{
+			const QPointF new_projected_ref_point = toProjectedCoords(point);
+			bool ok = true;
+			if (projected_ref_point != new_projected_ref_point)
+			{
+				projected_ref_point = new_projected_ref_point;
+				if (getState() != Local)
+				{
+					ok = false;
+					LatLon new_geo_ref_point = toGeographicCoords(projected_ref_point, &ok);
+					if (ok)
+					{
+						geographic_ref_point = new_geo_ref_point;
+						updateGridCompensation();
+						initDeclination();
+						initAuxiliaryScaleFactor();
+						emit projectionChanged();
+					}
+				}
+				emit transformationChanged();
+			}
+			return ok;
+		}
 	}
+	return true;
 }
 
-void Georeferencing::setProjectedRefPoint(const QPointF& point, UpdateOption update_parameters)
+bool Georeferencing::setProjectedRefPoint(const QPointF& point, UpdateOption update_parameters, bool keep_georeferencing)
 {
 	if (projected_ref_point != point || getState() == Geospatial)
 	{
 		projected_ref_point = point;
-		bool ok = {};
+		bool ok = true;
 		LatLon new_geo_ref_point;
 		
 		switch (getState())
@@ -866,6 +894,7 @@ void Georeferencing::setProjectedRefPoint(const QPointF& point, UpdateOption upd
 		case BrokenGeospatial:
 			break;
 		case Geospatial:
+			ok = false;
 			new_geo_ref_point = toGeographicCoords(point, &ok);
 			if (ok && new_geo_ref_point != geographic_ref_point)
 			{
@@ -887,8 +916,12 @@ void Georeferencing::setProjectedRefPoint(const QPointF& point, UpdateOption upd
 				emit projectionChanged();
 			}
 		}
+		if (keep_georeferencing)
+			map_ref_point = toMapCoords(point);
 		updateTransformation();
+		return ok;
 	}
+	return true;
 }
 
 QString Georeferencing::getProjectedCRSName() const
@@ -981,21 +1014,21 @@ void Georeferencing::updateGridCompensation()
 	grid_scale_factor = sqrt(determinant);
 }
 
-void Georeferencing::setGeographicRefPoint(LatLon lat_lon, UpdateOption update_parameters)
+bool Georeferencing::setGeographicRefPoint(LatLon lat_lon, UpdateOption update_parameters, bool keep_georeferencing)
 {
 	bool geo_ref_point_changed = geographic_ref_point != lat_lon;
 	if (geo_ref_point_changed || getState() == Geospatial)
 	{
 		geographic_ref_point = lat_lon;
-		if (getState() == Local)
-			setState(BrokenGeospatial);
 		
 		bool ok = {};
 		QPointF new_projected_ref = toProjectedCoords(lat_lon, &ok);
-		if (ok && new_projected_ref != projected_ref_point)
+		if (ok)
 		{
 			projected_ref_point = new_projected_ref;
 			updateGridCompensation();
+			if (keep_georeferencing)
+				map_ref_point = toMapCoords(projected_ref_point);
 			switch (update_parameters)
 			{
 			case UpdateGridParameter:
@@ -1010,13 +1043,14 @@ void Georeferencing::setGeographicRefPoint(LatLon lat_lon, UpdateOption update_p
 				break;
 			}
 			updateTransformation();
-			emit projectionChanged();
 		}
-		else if (geo_ref_point_changed)
+		if (geo_ref_point_changed)
 		{
 			emit projectionChanged();
 		}
+		return ok;
 	}
+	return true;
 }
 
 void Georeferencing::updateTransformation()

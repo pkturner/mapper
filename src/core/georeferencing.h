@@ -377,7 +377,7 @@ public:
 	 * 
 	 * This will <b>not</b> update the map and geographic coordinates of the reference point.
 	 */
-	void setMapRefPoint(const MapCoord& point);
+	bool setMapRefPoint(const MapCoord& point, bool keep_georeferencing = false);
 	
 	
 	/**
@@ -392,7 +392,8 @@ public:
 	 * point, the convergence, the grivation, the transformations, and the
 	 * scale factors.
 	 */
-	void setProjectedRefPoint(const QPointF& point, UpdateOption update_parameters = UpdateGridParameter);
+	bool setProjectedRefPoint(const QPointF& point, UpdateOption update_parameters = UpdateGridParameter,
+													bool keep_georeferencing = false);
 	
 	
 	/**
@@ -465,7 +466,8 @@ public:
 	 * point, the convergence, the grivation, the transformations, and the
 	 * scale factors.
 	 */
-	void setGeographicRefPoint(LatLon lat_lon, UpdateOption update_parameters = UpdateGridParameter);
+	bool setGeographicRefPoint(LatLon lat_lon, UpdateOption update_parameters = UpdateGridParameter,
+											   bool keep_georeferencing = false);
 	
 	
 	/** 
