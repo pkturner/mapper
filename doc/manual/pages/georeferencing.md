@@ -22,7 +22,7 @@ Georeferencing properties are set in a dialog which is available from the menu *
 
 ![Georeferencing dialog](images/georeferencing_dialog.png)
 
-The **Map &gt; Switch reference system...** dialog allows the setting of certain georeferencing parameters, automatically adjusting others to minimize or eliminate any effect on the geographic coordinates of objects. There is no change to the map. Changing the coordinate reference system here compensates by adjusting the projected coordinates and grivation. Changing the reference point here affects all the involved coordinates in tandem. Note that the map declination may change due to being measured at a different reference point.
+The **Map &gt; Recast reference system...** dialog allows the setting of certain georeferencing parameters, automatically adjusting others to minimize or eliminate any effect on the geographic coordinates of objects. There is no change to the map. Changing the coordinate reference system here compensates by adjusting the projected coordinates and grivation. Changing the reference point here affects all the involved coordinates in tandem. Note that the map declination may change due to being measured at a different reference point.
 
 The **Map &gt; Realign map...** dialog allows the setting of certain georeferencing parameters, while keeping the geographic coordinates of map objects unchanged. It compensates by automatically moving objects on the map. Changing the declination rotates; changing the scale or a scale factor stretches or shrinks; changing the map reference point shifts map coordinates.
 

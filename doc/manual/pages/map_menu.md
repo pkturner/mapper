@@ -12,6 +12,10 @@ edited: 20 January 2018
 
 Opens the [georeferencing dialog](georeferencing.md).
 
+#### Recast reference system...
+
+Opens the [reference system dialog](georeferencing.md).
+
 
 #### ![ ](../mapper-images/grid.png) Configure grid...
 

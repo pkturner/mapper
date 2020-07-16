@@ -145,6 +145,7 @@ set(Mapper_Common_SRCS
   gui/print_progress_dialog.cpp
   gui/print_tool.cpp
   gui/print_widget.cpp
+  gui/reference_system_dialog.cpp
   gui/select_crs_dialog.cpp
   gui/settings_dialog.cpp
   gui/task_dialog.cpp

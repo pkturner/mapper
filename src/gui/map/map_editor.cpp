@@ -118,6 +118,7 @@
 #include "gui/georeferencing_dialog.h"
 #include "gui/main_window.h"
 #include "gui/print_widget.h"
+#include "gui/reference_system_dialog.h"
 #include "gui/text_browser_dialog.h"
 #include "gui/util_gui.h"
 #include "gui/map/map_alignment_dialog.h"
@@ -461,6 +462,7 @@ void MapEditorController::setEditingInProgress(bool value)
 		find_feature->setEnabled(!editing_in_progress);
 		
 		// Map menu
+		change_reference_act->setEnabled(!editing_in_progress);
 		georeferencing_act->setEnabled(!editing_in_progress);
 		align_map_act->setEnabled(!editing_in_progress);
 		rotate_map_act->setEnabled(!editing_in_progress);
@@ -1011,6 +1013,8 @@ void MapEditorController::createActions()
 	load_crt_act = newAction("loadcrt", tr("Load CRT file..."), this, SLOT(loadCrtClicked()), nullptr, tr("Assign new symbols by cross-reference table"), "symbol_replace_dialog.html");
 	/*QAction* load_colors_from_act = newAction("loadcolors", tr("Load colors from..."), this, SLOT(loadColorsFromClicked()), nullptr, tr("Replace the colors with those from another map file"));*/
 	
+	change_reference_act = newAction("refsystem", tr("Recast reference system..."), this, SLOT(editReferenceSystem()), nullptr, tr("Replace the CRS or adjust the geographic reference point"), "georeferencing.html");
+	change_reference_act->setEnabled(ReferenceSystemDialog::suitable(map->getGeoreferencing()));
 	scale_all_symbols_act = newAction("scaleall", tr("Scale all symbols..."), this, SLOT(scaleAllSymbolsClicked()), nullptr, tr("Scale the whole symbol set"), "map_menu.html");
 	georeferencing_act = newAction("georef", tr("Set georeferencing..."), this, SLOT(editGeoreferencing()), nullptr, QString{}, "georeferencing.html");
 	align_map_act = newAction("alignmap", tr("Realign map..."), this, SLOT(editAlignment()), nullptr, QString{}, "georeferencing.html");
@@ -1237,6 +1241,7 @@ void MapEditorController::createMenuAndToolbars()
 	QMenu* map_menu = window->menuBar()->addMenu(tr("M&ap"));
 	map_menu->setWhatsThis(Util::makeWhatThis("map_menu.html"));
 	map_menu->addAction(georeferencing_act);
+	map_menu->addAction(change_reference_act);
 	map_menu->addAction(configure_grid_act);
 	map_menu->addSeparator();
 	map_menu->addAction(align_map_act);
@@ -2319,6 +2324,23 @@ void MapEditorController::showTagsWindow(bool show)
 }
 
 
+void MapEditorController::editReferenceSystem()
+{
+	if (reference_system_dialog.isNull())
+	{
+		auto* dialog = new ReferenceSystemDialog(this);
+		reference_system_dialog.reset(dialog);
+		connect(dialog, &QDialog::finished, this, &MapEditorController::referenceSystemDialogFinished);
+	}
+	reference_system_dialog->exec();
+}
+
+void MapEditorController::referenceSystemDialogFinished()
+{
+	reference_system_dialog.take()->deleteLater();
+	map->updateAllMapWidgets();
+}
+
 void MapEditorController::editGeoreferencing()
 {
 	if (georeferencing_dialog.isNull())
@@ -2338,6 +2360,7 @@ void MapEditorController::georeferencingDialogFinished()
 {
 	georeferencing_dialog.take()->deleteLater();
 	map->updateAllMapWidgets();
+	change_reference_act->setEnabled(ReferenceSystemDialog::suitable(map->getGeoreferencing()));
 	
 	bool gps_display_possible = map->getGeoreferencing().getState() == Georeferencing::Geospatial;
 	if (!gps_display_possible)
@@ -2368,6 +2391,7 @@ void MapEditorController::mapAlignmentDialogFinished()
 {
 	map_alignment_dialog.take()->deleteLater();
 	map->updateAllMapWidgets();
+	change_reference_act->setEnabled(ReferenceSystemDialog::suitable(map->getGeoreferencing()));
 	
 	bool gps_display_possible = map->getGeoreferencing().getState() == Georeferencing::Geospatial;
 	if (!gps_display_possible)

@@ -70,6 +70,7 @@ class MapView;
 class MapWidget;
 class PaintOnTemplateFeature;
 class PrintWidget;
+class ReferenceSystemDialog;
 class ReopenTemplateDialog;
 class Symbol;
 class SymbolWidget;
@@ -355,6 +356,8 @@ public slots:
 	/** Shows or hides the tags editor dock widget. */
 	void showTagsWindow(bool show);
 	
+	/** Shows the ReferenceSystemDialog. */
+	void editReferenceSystem();
 	/** Shows the GeoreferencingDialog. */
 	void editGeoreferencing();
 	
@@ -632,6 +635,7 @@ protected:
 	
 protected slots:
 	void projectionChanged();
+	void referenceSystemDialogFinished();
 	void georeferencingDialogFinished();
 	void mapAlignmentDialogFinished();
 	
@@ -732,6 +736,7 @@ private:
 	
 	QMenu* toolbars_menu = nullptr;
 	
+	QAction* change_reference_act;
 	QAction* scale_all_symbols_act;
 	QAction* georeferencing_act;
 	QAction* align_map_act;
@@ -840,6 +845,7 @@ private:
 	
 	QPointer<QComboBox> mappart_selector_box;
 	
+	QScopedPointer<ReferenceSystemDialog> reference_system_dialog;
 	QScopedPointer<GeoreferencingDialog> georeferencing_dialog;
 	QScopedPointer<MapAlignmentDialog> map_alignment_dialog;
 	QScopedPointer<ReopenTemplateDialog> reopen_template_dialog;
