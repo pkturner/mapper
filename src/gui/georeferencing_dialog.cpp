@@ -553,7 +553,12 @@ void GeoreferencingDialog::accept()
 		
 		if (result == QMessageBox::Yes)
 		{
-			StretchMapDialog dialog(*map, 1.0/scale_factor_change, this);
+			// Note: This revision of GeoreferencingDialog coexists with a version of
+			// StretchMapDialog which does not support a pre-set value for the
+			// stretch_factor. It will not work automatically, which would be a bug,
+			// except that this code path is obsolete and will be removed.
+			// StretchMapDialog dialog(*map, 1.0/scale_factor_change, this);
+			StretchMapDialog dialog(*map, this);
 			dialog.setWindowModality(Qt::WindowModal);
 			if (dialog.exec() == QDialog::Rejected)
 				return;

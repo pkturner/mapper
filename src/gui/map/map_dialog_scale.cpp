@@ -94,13 +94,6 @@ ScaleMapDialog::ScaleMapDialog(QWidget* parent, Map* map) : QDialog(parent, Qt::
 		adjust_objects_check->setEnabled(false);
 	layout->addRow(adjust_objects_check);
 	
-	adjust_georeferencing_check = new QCheckBox(tr("Adjust georeferencing reference point"));
-	if (map->getGeoreferencing().getState() == Georeferencing::Geospatial)
-		adjust_georeferencing_check->setChecked(true);
-	else
-		adjust_georeferencing_check->setEnabled(false);
-	layout->addRow(adjust_georeferencing_check);
-	
 	adjust_templates_check = new QCheckBox(tr("Scale non-georeferenced templates"));
 	bool have_non_georeferenced_template = false;
 	for (int i = 0; i < map->getNumTemplates() && !have_non_georeferenced_template; ++i)
@@ -138,7 +131,6 @@ void ScaleMapDialog::updateWidgets()
 {
 	other_x_edit->setEnabled(center_other_radio->isChecked());
 	other_y_edit->setEnabled(center_other_radio->isChecked());
-	adjust_georeferencing_check->setEnabled(!center_georef_radio->isChecked());
 }
 
 void ScaleMapDialog::okClicked()

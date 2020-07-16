@@ -25,9 +25,19 @@ Shows the [grid configuration dialog](grid.md).
 Shows a dialog to change the map scale.
 
 
-#### ![ ](../mapper-images/tool-rotate.png) Rotate map...
+#### ![ ](../mapper-images/tool-rotate.png) Rotate all objects...
 
 Shows a dialog to rotate the whole map.
+
+
+#### ![ ](../mapper-images/tool-scale.png) Scale all objects...
+
+Shows a dialog to scale the whole map.
+
+
+#### Shift all objects...
+
+Shows a dialog to shift the whole map relative to its coordinate system.
 
 
 #### Map notes...

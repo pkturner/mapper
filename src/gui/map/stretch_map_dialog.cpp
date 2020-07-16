@@ -40,15 +40,18 @@
 
 namespace OpenOrienteering {
 
-StretchMapDialog::StretchMapDialog(const Map& map, double stretch_factor, QWidget* parent, Qt::WindowFlags f)
+StretchMapDialog::StretchMapDialog(const Map& map, QWidget* parent, Qt::WindowFlags f)
 : QDialog(parent, f)
-, stretch_factor(stretch_factor)
 {
-	setWindowTitle(tr("Change scale factor"));
+	setWindowTitle(tr("Scale all objects"));
 	
 	auto* layout = new QFormLayout();
 	
 	layout->addRow(Util::Headline::create(tr("Scaling parameters")));
+	
+	scale_factor_edit = Util::SpinBox::create(Georeferencing::scaleFactorPrecision(), 0.001, 1000.0);
+	scale_factor_edit->setValue(1.0);
+	layout->addRow(tr("Scale factor:"), scale_factor_edit);
 	
 	layout->addRow(new QLabel(tr("Scaling center:")));
 	
@@ -70,23 +73,23 @@ StretchMapDialog::StretchMapDialog(const Map& map, double stretch_factor, QWidge
 	center_other_radio = new QRadioButton(tr("Other point,"));
 	layout->addRow(center_other_radio);
 	
-	other_x_edit = Util::SpinBox::create<MapCoordF>();
 	//: x coordinate
+	other_x_edit = Util::SpinBox::create<MapCoordF>();
 	layout->addRow(tr("X:"), other_x_edit);
 	
-	other_y_edit = Util::SpinBox::create<MapCoordF>();
 	//: y coordinate
+	other_y_edit = Util::SpinBox::create<MapCoordF>();
 	layout->addRow(tr("Y:"), other_y_edit);
 	
 	layout->addItem(Util::SpacerItem::create(this));
 	layout->addRow(Util::Headline::create(tr("Options")));
 	
-	adjust_georeferencing_check = new QCheckBox(tr("Adjust georeferencing reference point"));
+	adjust_scale_factor_check = new QCheckBox(tr("Adjust georeferencing auxiliary scale factor"));
 	if (map.getGeoreferencing().getState() == Georeferencing::Geospatial)
-		adjust_georeferencing_check->setChecked(true);
+		adjust_scale_factor_check->setChecked(true);
 	else
-		adjust_georeferencing_check->setEnabled(false);
-	layout->addRow(adjust_georeferencing_check);
+		adjust_scale_factor_check->setEnabled(false);
+	layout->addRow(adjust_scale_factor_check);
 	
 	adjust_templates_check = new QCheckBox(tr("Scale non-georeferenced templates"));
 	adjust_templates_check->setChecked(true);
@@ -94,7 +97,6 @@ StretchMapDialog::StretchMapDialog(const Map& map, double stretch_factor, QWidge
 	
 	
 	QDialogButtonBox* button_box = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal);
-	ok_button = button_box->button(QDialogButtonBox::Ok);
 	
 	auto* box_layout = new QVBoxLayout();
 	box_layout->addLayout(layout);
@@ -117,7 +119,6 @@ void StretchMapDialog::updateWidgets()
 {
 	other_x_edit->setEnabled(center_other_radio->isChecked());
 	other_y_edit->setEnabled(center_other_radio->isChecked());
-	adjust_georeferencing_check->setEnabled(!center_georef_radio->isChecked());
 }
 
 void StretchMapDialog::stretch(Map& map) const
@@ -131,10 +132,10 @@ StretchMapDialog::StretchOp StretchMapDialog::makeStretch() const
 	if (center_other_radio->isChecked())
 		center = MapCoord(other_x_edit->value(), -other_y_edit->value());
 	
-	auto adjust_georeferencing = adjust_georeferencing_check->isChecked();
+	auto adjust_georeferencing = adjust_scale_factor_check->isChecked();
 	auto adjust_templates = adjust_templates_check->isChecked();
 	auto center_georef = center_georef_radio->isChecked();
-	auto factor = stretch_factor;
+	auto factor = scale_factor_edit->value();
 	return [factor, center, center_georef, adjust_georeferencing, adjust_templates](Map& map) {
 		auto actual_center = center_georef ? map.getGeoreferencing().getMapRefPoint() : center;
 		map.changeScale(map.getScaleDenominator(), factor, actual_center, false, true, adjust_georeferencing, adjust_georeferencing, adjust_templates);

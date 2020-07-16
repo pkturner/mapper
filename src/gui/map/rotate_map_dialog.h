@@ -78,7 +78,6 @@ private:
 	QDoubleSpinBox* other_x_edit;
 	QDoubleSpinBox* other_y_edit;
 	
-	QCheckBox* adjust_georeferencing_check;
 	QCheckBox* adjust_declination_check;
 	QCheckBox* adjust_templates_check;
 };

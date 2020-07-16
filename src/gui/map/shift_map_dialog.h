@@ -19,8 +19,8 @@
  */
 
 
-#ifndef OPENORIENTEERING_STRETCH_MAP_DIALOG_H
-#define OPENORIENTEERING_STRETCH_MAP_DIALOG_H
+#ifndef OPENORIENTEERING_SHIFT_MAP_DIALOG_H
+#define OPENORIENTEERING_SHIFT_MAP_DIALOG_H
 
 #include <functional>
 
@@ -30,8 +30,8 @@
 #include <QObject>
 #include <QString>
 
-class QCheckBox;
 class QDoubleSpinBox;
+class QCheckBox;
 class QRadioButton;
 class QWidget;
 
@@ -41,36 +41,40 @@ class Map;
 
 
 /**
- * Dialog for stretching or shrinking the whole map.
+ * Dialog for shifting (translation of) the whole map.
  */
-class StretchMapDialog : public QDialog
+class ShiftMapDialog : public QDialog
 {
 Q_OBJECT
 public:
-	using StretchOp = std::function<void (Map&)>;
+	using ShiftOp = std::function<void (Map&)>;
+
+	/** Creates a new ShiftMapDialog. */
+	ShiftMapDialog(const Map& map, QWidget* parent = nullptr, Qt::WindowFlags f = {});
 	
-	/** Creates a new StretchMapDialog. */
-	StretchMapDialog(const Map& map, QWidget* parent = nullptr, Qt::WindowFlags f = {});
+	/** Performs the configured shift on the given map. */
+	void shift(Map& map) const;
 	
-	/** Performs the configured scaling on the given map. */
-	void stretch(Map& map) const;
-	
-	/** Returns a scaling functor. */
-	Q_REQUIRED_RESULT StretchOp makeStretch() const;
+	/** Returns a shifting functor. */
+	Q_REQUIRED_RESULT ShiftOp makeShift() const;
 	
 private slots:
+	void rightwardLeftwardEdited();
+	void eastingNorthingEdited();
 	void updateWidgets();
 	
 private:
-	QDoubleSpinBox* scale_factor_edit;
-	QRadioButton* center_origin_radio;
-	QRadioButton* center_georef_radio;
-	QRadioButton* center_other_radio;
-	QDoubleSpinBox* other_x_edit;
-	QDoubleSpinBox* other_y_edit;
+	QDoubleSpinBox* rightward_adjust_edit;
+	QDoubleSpinBox* upward_adjust_edit;
 	
-	QCheckBox* adjust_scale_factor_check;
+	QDoubleSpinBox* easting_adjust_edit;
+	QDoubleSpinBox* northing_adjust_edit;
+	
+	QCheckBox* adjust_ref_point_check;
 	QCheckBox* adjust_templates_check;
+	
+	QTransform map_to_projected;
+	QTransform projected_to_map;
 };
 
 

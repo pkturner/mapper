@@ -44,7 +44,7 @@ namespace OpenOrienteering {
 RotateMapDialog::RotateMapDialog(const Map& map, QWidget* parent, Qt::WindowFlags f)
 : QDialog(parent, f)
 {
-	setWindowTitle(tr("Rotate map"));
+	setWindowTitle(tr("Rotate all objects"));
 	
 	auto* layout = new QFormLayout();
 	
@@ -81,13 +81,6 @@ RotateMapDialog::RotateMapDialog(const Map& map, QWidget* parent, Qt::WindowFlag
 	
 	layout->addItem(Util::SpacerItem::create(this));
 	layout->addRow(Util::Headline::create(tr("Options")));
-	
-	adjust_georeferencing_check = new QCheckBox(tr("Adjust georeferencing reference point"));
-	if (map.getGeoreferencing().getState() == Georeferencing::Geospatial)
-		adjust_georeferencing_check->setChecked(true);
-	else
-		adjust_georeferencing_check->setEnabled(false);
-	layout->addRow(adjust_georeferencing_check);
 	
 	adjust_declination_check = new QCheckBox(tr("Adjust georeferencing declination"));
 	if (map.getGeoreferencing().getState() == Georeferencing::Geospatial)
@@ -148,7 +141,6 @@ void RotateMapDialog::updateWidgets()
 {
 	other_x_edit->setEnabled(center_other_radio->isChecked());
 	other_y_edit->setEnabled(center_other_radio->isChecked());
-	adjust_georeferencing_check->setEnabled(!center_georef_radio->isChecked());
 }
 
 void RotateMapDialog::rotate(Map& map) const

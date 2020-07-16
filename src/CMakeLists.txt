@@ -158,6 +158,7 @@ set(Mapper_Common_SRCS
   gui/map/map_find_feature.cpp
   gui/map/map_widget.cpp
   gui/map/rotate_map_dialog.cpp
+  gui/map/shift_map_dialog.cpp
   gui/map/stretch_map_dialog.cpp
   
   gui/symbols/area_symbol_settings.cpp

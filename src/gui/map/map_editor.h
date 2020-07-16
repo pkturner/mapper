@@ -333,6 +333,10 @@ public slots:
 	void scaleMapClicked();
 	/** Shows the RotateMapDialog. */
 	void rotateMapClicked();
+	/** Shows the StretchMapDialog. */
+	void stretchMapClicked();
+	/** Shows the ShiftMapDialog. */
+	void shiftMapClicked();
 	/** Shows the dialog to enter map notes. */
 	void mapNotesClicked();
 	
@@ -730,6 +734,8 @@ private:
 	QAction* georeferencing_act;
 	QAction* scale_map_act;
 	QAction* rotate_map_act;
+	QAction* stretch_map_act;
+	QAction* shift_map_act;
 	QAction* map_notes_act;
 	QAction* symbol_set_id_act;
 	
