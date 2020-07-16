@@ -72,6 +72,18 @@ namespace ObjectOp
 	
 	// Operations
 	
+	/** Moves objects by the given offset. */
+	struct Move
+	{
+		MapCoord offset;
+		
+		void operator()(Object* object) const
+		{
+			object->move(offset);
+			object->update();
+		}
+	};
+	
 	/** Scales objects by the given factor. */
 	struct Scale
 	{

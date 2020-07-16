@@ -751,6 +751,12 @@ QRectF Template::boundingRect() const
 	return rect;
 }
 
+void Template::shift(const MapCoord& offset)
+{
+	Q_ASSERT(!is_georeferenced);
+	setTemplatePosition(templatePosition() + offset);
+}
+
 void Template::scale(double factor, const MapCoord& center)
 {
 	Q_ASSERT(!is_georeferenced);

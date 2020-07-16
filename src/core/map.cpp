@@ -515,6 +515,38 @@ unsigned int Map::getScaleDenominator() const
 	return georeferencing->getScaleDenominator();
 }
 
+void Map::shiftMap(const MapCoord& offset, bool adjust_templates)
+{
+	if (offset.isPositionEqualTo(MapCoord{}))
+		return;
+	
+	undo_manager->clear();
+	moveAllObjects(offset);
+	
+	if (adjust_templates)
+	{
+		for (int i = 0; i < getNumTemplates(); ++i)
+		{
+			Template* temp = getTemplate(i);
+			if (temp->isTemplateGeoreferenced())
+				continue;
+			setTemplateAreaDirty(i);
+			temp->shift(offset);
+			setTemplateAreaDirty(i);
+		}
+		for (int i = 0; i < getNumClosedTemplates(); ++i)
+		{
+			Template* temp = getClosedTemplate(i);
+			if (temp->isTemplateGeoreferenced())
+				continue;
+			temp->shift(offset);
+		}
+	}
+	
+	setOtherDirty();
+	updateAllMapWidgets();
+}
+
 void Map::changeScale(unsigned int new_scale_denominator, double additional_stretch, const MapCoord& scaling_center, bool scale_symbols, bool scale_objects, bool scale_georeferencing, bool scale_templates)
 {
 	if (new_scale_denominator == getScaleDenominator() && additional_stretch == 1.0)
@@ -2302,6 +2334,11 @@ void Map::applyOnAllObjects(const std::function<void (Object*, MapPart*, int)>& 
 }
 
 
+
+void Map::moveAllObjects(const MapCoord& offset)
+{
+	applyOnAllObjects(ObjectOp::Move{offset});
+}
 
 void Map::scaleAllObjects(double factor, const MapCoord& scaling_center)
 {

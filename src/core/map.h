@@ -994,6 +994,8 @@ public:
 	 */
 	void applyOnAllObjects(const std::function<void (Object*, MapPart*, int)>& operation);
 	
+	/** Moves all objects by the given offset. */
+	void moveAllObjects(const MapCoord& offset);
 	
 	/** Scales all objects by the given factor. */
 	void scaleAllObjects(double factor, const MapCoord& scaling_center);
@@ -1183,6 +1185,16 @@ public:
 	/** Returns the map's scale denominator. */
 	unsigned int getScaleDenominator() const;
 	
+	
+	/**
+	 * Shifts the map's objects by an offset.
+	 * 
+	 * @param offset The two-dimensional offset.
+	 * @param scale_templates Whether to adjust non-georeferenced templates.
+	 */
+	void shiftMap(const MapCoord& offset, bool adjust_templates);
+
+
 	/**
 	 * Changes the map's scale.
 	 * 

@@ -452,6 +452,13 @@ public:
 	virtual QRectF boundingRect() const;
 	
 	/** 
+	 * Shifts the template.
+	 * 
+	 * \note For non-georeferenced templates only!
+	 */
+	void shift(const MapCoord& offset);
+	
+	/** 
 	 * Scales the template with the given scaling center.
 	 * 
 	 * \note For non-georeferenced templates only!
