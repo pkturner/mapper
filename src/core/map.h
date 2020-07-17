@@ -1190,9 +1190,10 @@ public:
 	 * Shifts the map's objects by an offset.
 	 * 
 	 * @param offset The two-dimensional offset.
-	 * @param scale_templates Whether to adjust non-georeferenced templates.
+	 * @param adjust_map_ref_point Whether the map coordinates of the reference point.
+	 * @param adjust_templates Whether to adjust non-georeferenced templates.
 	 */
-	void shiftMap(const MapCoord& offset, bool adjust_templates);
+	void shiftMap(const MapCoord& offset, bool adjust_map_ref_point, bool adjust_templates);
 
 
 	/**
@@ -1204,11 +1205,13 @@ public:
 	 * @param scale_symbols Whether to scale the map symbols.
 	 * @param scale_objects Whether to scale the map object coordinates.
 	 * @param scale_georeferencing Whether to adjust the map's georeferencing reference point.
+	 * @param adjust_scale_factor Whether to adjust the georeferencing auxiliary scale factor.
 	 * @param scale_templates Whether to scale non-georeferenced templates.
 	 */
 	void changeScale(unsigned int new_scale_denominator, double additional_stretch,
 		const MapCoord& scaling_center, bool scale_symbols, bool scale_objects,
-		bool scale_georeferencing, bool scale_templates);
+		bool scale_georeferencing, bool adjust_scale_factor,
+		bool scale_templates);
 	
 	
 	/**

@@ -137,7 +137,7 @@ StretchMapDialog::StretchOp StretchMapDialog::makeStretch() const
 	auto factor = stretch_factor;
 	return [factor, center, center_georef, adjust_georeferencing, adjust_templates](Map& map) {
 		auto actual_center = center_georef ? map.getGeoreferencing().getMapRefPoint() : center;
-		map.changeScale(map.getScaleDenominator(), factor, actual_center, false, true, adjust_georeferencing, adjust_templates);
+		map.changeScale(map.getScaleDenominator(), factor, actual_center, false, true, adjust_georeferencing, adjust_georeferencing, adjust_templates);
 	};
 }
 

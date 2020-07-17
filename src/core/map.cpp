@@ -515,13 +515,15 @@ unsigned int Map::getScaleDenominator() const
 	return georeferencing->getScaleDenominator();
 }
 
-void Map::shiftMap(const MapCoord& offset, bool adjust_templates)
+void Map::shiftMap(const MapCoord& offset, bool adjust_map_ref_point, bool adjust_templates)
 {
 	if (offset.isPositionEqualTo(MapCoord{}))
 		return;
 	
 	undo_manager->clear();
 	moveAllObjects(offset);
+	if (adjust_map_ref_point)
+		georeferencing->setMapRefPoint(georeferencing->getMapRefPoint()+offset);
 	
 	if (adjust_templates)
 	{
@@ -547,7 +549,7 @@ void Map::shiftMap(const MapCoord& offset, bool adjust_templates)
 	updateAllMapWidgets();
 }
 
-void Map::changeScale(unsigned int new_scale_denominator, double additional_stretch, const MapCoord& scaling_center, bool scale_symbols, bool scale_objects, bool scale_georeferencing, bool scale_templates)
+void Map::changeScale(unsigned int new_scale_denominator, double additional_stretch, const MapCoord& scaling_center, bool scale_symbols, bool scale_objects, bool scale_georeferencing, bool adjust_scale_factor, bool scale_templates)
 {
 	if (new_scale_denominator == getScaleDenominator() && additional_stretch == 1.0)
 		return;
@@ -568,9 +570,13 @@ void Map::changeScale(unsigned int new_scale_denominator, double additional_stre
 			print_area.setBottomRight(center + factor * (print_area.bottomRight() - center));
 			printer_config->print_area = print_area;
 		}
+		if (scale_georeferencing)
+			georeferencing->setMapRefPoint(scaling_center + factor * (georeferencing->getMapRefPoint() - scaling_center));
 	}
-	if (scale_georeferencing)
-		georeferencing->setMapRefPoint(scaling_center + factor * (georeferencing->getMapRefPoint() - scaling_center));
+	if (adjust_scale_factor)
+	{
+		georeferencing->setAuxiliaryScaleFactor(georeferencing->getAuxiliaryScaleFactor() / additional_stretch);
+	}
 	if (scale_templates)
 	{
 		for (int i = 0; i < getNumTemplates(); ++i)
@@ -610,6 +616,7 @@ void Map::rotateMap(double rotation, const MapCoord& center, bool adjust_georefe
 		reference_point.rotate(-rotation);
 		georeferencing->setMapRefPoint(MapCoord(MapCoordF(center) + reference_point));
 	}
+
 	if (adjust_declination)
 	{
 		auto rotation_degrees = qRadiansToDegrees(rotation);

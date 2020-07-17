@@ -163,13 +163,12 @@ RotateMapDialog::RotationOp RotateMapDialog::makeRotation() const
 	if (center_other_radio->isChecked())
 		center = MapCoord(other_x_edit->value(), -other_y_edit->value());
 	
-	auto adjust_georeferencing = adjust_georeferencing_check->isChecked();
-	auto adjust_declination = adjust_declination_check->isChecked();
+	auto adjust_georeferencing = adjust_declination_check->isChecked();
 	auto adjust_templates = adjust_templates_check->isChecked();
 	auto center_georef = center_georef_radio->isChecked();
-	return [rotation, center, center_georef, adjust_georeferencing, adjust_declination, adjust_templates](Map& map) {
+	return [rotation, center, center_georef, adjust_georeferencing, adjust_templates](Map& map) {
 		auto actual_center = center_georef ? map.getGeoreferencing().getMapRefPoint() : center;
-		map.rotateMap(rotation, actual_center, adjust_georeferencing, adjust_declination, adjust_templates);
+		map.rotateMap(rotation, actual_center, adjust_georeferencing, adjust_georeferencing, adjust_templates);
 	};
 }
 
