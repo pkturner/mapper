@@ -252,7 +252,10 @@ GeoreferencingDialog::GeoreferencingDialog(
 	edit_layout->addRow(tr("Map coordinates:"), map_ref_layout);
 	edit_layout->addRow(projected_ref_label, projected_ref_layout);
 	edit_layout->addRow(tr("Geographic coordinates:"), geographic_ref_layout);
-	edit_layout->addRow(show_refpoint_label, link_label);
+	QSpacerItem *half_space = Util::SpacerItem::create(this);
+	const auto size = half_space->minimumSize();
+	half_space->changeSize(size.width(), size.height()/2);
+	edit_layout->addItem(half_space);
 	edit_layout->addRow(show_refpoint_label, link_label);
 	edit_layout->addRow(tr("On CRS changes, keep:"), keep_projected_radio);
 	edit_layout->addRow({}, keep_geographic_radio);
