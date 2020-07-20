@@ -608,7 +608,7 @@ void TemplateTrack::applyProjectedCrsSpec()
 	Georeferencing georef;
 	georef.setScaleDenominator(int(map->getScaleDenominator()));
 	georef.setProjectedCRS(QString{}, projected_crs_spec);
-	georef.setProjectedRefPoint({}, Georeferencing::UpdateGeographicParameter, Georeferencing::UpdateGeographicParameter);
+	georef.setProjectedRefPoint({}, Georeferencing::UpdateGeographicParameter);
 	track.changeMapGeoreferencing(georef);
 }
 

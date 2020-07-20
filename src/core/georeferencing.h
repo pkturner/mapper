@@ -392,7 +392,7 @@ public:
 	 * point, the convergence, the grivation, the transformations, and the
 	 * scale factors.
 	 */
-	void setProjectedRefPoint(const QPointF& point, UpdateOption update_grivation = UpdateGridParameter, UpdateOption update_scale_factor = UpdateGridParameter);
+	void setProjectedRefPoint(const QPointF& point, UpdateOption update_parameters = UpdateGridParameter);
 	
 	
 	/**
@@ -465,7 +465,7 @@ public:
 	 * point, the convergence, the grivation, the transformations, and the
 	 * scale factors.
 	 */
-	void setGeographicRefPoint(LatLon lat_lon, UpdateOption update_grivation = UpdateGridParameter, UpdateOption update_scale_factor = UpdateGridParameter);
+	void setGeographicRefPoint(LatLon lat_lon, UpdateOption update_parameters = UpdateGridParameter);
 	
 	
 	/** 

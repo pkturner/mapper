@@ -36,6 +36,7 @@ class QDialogButtonBox;
 class QDoubleSpinBox;
 class QLabel;
 class QPushButton;
+class QRadioButton;
 class QNetworkReply;
 class QWidget;
 
@@ -140,12 +141,12 @@ public:
 	bool setMapRefPoint(const MapCoord& coords) override;
 	
 	/**
-	 * Activates the "keep projected reference point coordinates on CRS changes" radio button.
+	 * Activates the radio button that keeps projected reference point coordinates on CRS changes.
 	 */
 	void setKeepProjectedRefCoords();
 	
 	/**
-	 * Activates the "keep geographic reference point coordinates on CRS changes" radio button.
+	 * Activates the radio button that keeps geographic reference point coordinates on CRS changes.
 	 */
 	void setKeepGeographicRefCoords();
 	
@@ -193,14 +194,19 @@ protected:
 	void crsEdited();
 	
 	/**
+	 * Notifies the dialog of change of the control aspect buttons.
+	 */
+	void controlAspectChanged();
+	
+	/**
 	 * Notifies the dialog of a change in the auxiliary scale factor.
 	 */
 	void auxiliaryFactorEdited(double value);
 	
 	/**
-	 * Updates the combined scale factor field from the underlying Georeferencing.
+	 * Notifies the dialog of a change in the combined scale factor.
 	 */
-	void updateCombinedFactor();
+	void combinedFactorEdited(double value);
 	
 	/**
 	 * Notifies the dialog of a change in the map reference point fields.
@@ -211,11 +217,6 @@ protected:
 	 * Notifies the dialog of a change in the easting / northing fields.
 	 */
 	void eastingNorthingEdited();
-	
-	/**
-	 * Notifies the dialog of change of the keep-coords buttons.
-	 */
-	void keepCoordsChanged();
 	
 	/**
 	 * Notifies the dialog of a change in the latitude / longitude fields.
@@ -233,22 +234,24 @@ protected:
 	void declinationReplyFinished(QNetworkReply* reply);
 	
 	/**
-	 * Updates the grivation field from the underlying Georeferencing.
+	 * Notifies the dialog of a change in the grivation field.
 	 */
-	void updateGrivation();
+	void grivationEdited(double value);
 	
 private:
 	/* Internal state */
 	bool allow_no_georeferencing;
 	bool declination_query_in_progress;
-	bool grivation_locked;
-	bool scale_factor_locked;
+	bool control_projected_selected; // not forced by local state
 	
 	/* GUI elements */
 	CRSSelector* crs_selector;
 	QLabel* status_label;
 	QLabel* status_field;
 	
+	QRadioButton* control_projected_radio;
+	QRadioButton* control_geographic_radio;
+
 	QDoubleSpinBox* map_x_edit;
 	QDoubleSpinBox* map_y_edit;
 	QPushButton* ref_point_button;
@@ -262,17 +265,14 @@ private:
 	QLabel* show_refpoint_label;
 	QLabel* link_label;
 	
-	QRadioButton* keep_projected_radio;
-	QRadioButton* keep_geographic_radio;
-	
 	QDoubleSpinBox* declination_edit;
 	QPushButton* declination_button;
-	QLabel* grivation_label;
+	QDoubleSpinBox* grivation_edit;
 
 	QCheckBox* show_scale_check;
 	std::vector<QWidget*> scale_widget_list;
-	QDoubleSpinBox* scale_factor_edit;
-	QLabel* combined_factor_display;
+	QDoubleSpinBox* aux_factor_edit;
+	QDoubleSpinBox* combined_factor_edit;
 	
 	QPushButton* reset_button;
 	QDialogButtonBox* buttons_box;

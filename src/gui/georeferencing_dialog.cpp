@@ -38,7 +38,6 @@
 #include <QLabel>
 #include <QLatin1Char>
 #include <QLatin1String>
-#include <QLocale>
 #include <QMessageBox>
 #include <QPointF>
 #include <QPushButton>
@@ -103,8 +102,7 @@ GeoreferencingDialog::GeoreferencingDialog(
  : GeoDialogCommon(parent, controller, map, initial)
  , allow_no_georeferencing(allow_no_georeferencing)
  , declination_query_in_progress(false)
- , grivation_locked(initial_georef->getState() != Georeferencing::Geospatial)
- , scale_factor_locked(grivation_locked)
+ , control_projected_selected(false)
 {
 	setWindowTitle(tr("Map Georeferencing"));
 	setWindowModality(Qt::WindowModal);
@@ -124,6 +122,19 @@ GeoreferencingDialog::GeoreferencingDialog(
 	int ref_point_button_width = ref_point_button->sizeHint().width();
 	auto geographic_datum_label = new QLabel(tr("(Datum: WGS84)"));
 	int geographic_datum_label_width = geographic_datum_label->sizeHint().width();
+
+	auto aspect_label = Util::Headline::create(tr("Aspect"));
+
+	control_geographic_radio = new QRadioButton(tr("Geographic parameters"));
+	control_projected_radio = new QRadioButton(tr("Projected parameters"));
+	if (georef->getState() == Georeferencing::Geospatial)
+	{
+		control_geographic_radio->setChecked(true);
+	}
+	else
+	{
+		control_projected_radio->setChecked(true);
+	}
 	
 	map_x_edit = Util::SpinBox::create<MapCoordF>(tr("mm"));
 	map_y_edit = Util::SpinBox::create<MapCoordF>(tr("mm"));
@@ -163,18 +174,6 @@ GeoreferencingDialog::GeoreferencingDialog(
 	link_label = new QLabel();
 	link_label->setOpenExternalLinks(true);
 	
-	keep_projected_radio = new QRadioButton(tr("Projected coordinates"));
-	keep_geographic_radio = new QRadioButton(tr("Geographic coordinates"));
-	if (georef->getState() == Georeferencing::Geospatial)
-	{
-		keep_geographic_radio->setChecked(true);
-	}
-	else
-	{
-		keep_geographic_radio->setEnabled(false);
-		keep_projected_radio->setCheckable(true);
-	}
-	
 	auto map_north_label = Util::Headline::create(tr("Map north"));
 	
 	declination_edit = Util::SpinBox::create<Util::RotationalDegrees>();
@@ -182,8 +181,8 @@ GeoreferencingDialog::GeoreferencingDialog(
 	auto declination_layout = new QHBoxLayout();
 	declination_layout->addWidget(declination_edit, 1);
 	declination_layout->addWidget(declination_button, 0);
-	
-	grivation_label = new QLabel();
+
+	grivation_edit = Util::SpinBox::create<Util::RotationalDegrees>();
 	
 	show_scale_check = new QCheckBox(tr("Show scale factors"));
 	auto scale_compensation_label = Util::Headline::create(tr("Scale compensation"));
@@ -192,17 +191,17 @@ GeoreferencingDialog::GeoreferencingDialog(
 	    and the corresponding length on the curved earth model. It is applied
 	    as a factor to ground distances to get grid plane distances. */
 	auto combined_factor_label = new QLabel(tr("Combined scale factor:"));
-	combined_factor_display = new QLabel();
+	combined_factor_edit = Util::SpinBox::create(Georeferencing::scaleFactorPrecision(), 0.001, 1000.0);
 	
 	/*: The auxiliary scale factor is the ratio between a length in the curved
 	    earth model and the corresponding length on the ground. It is applied
 	    as a factor to ground distances to get curved earth model distances. */
 	auto auxiliary_factor_label = new QLabel(tr("Auxiliary scale factor:"));
-	scale_factor_edit = Util::SpinBox::create(Georeferencing::scaleFactorPrecision(), 0.001, 1000.0);
+	aux_factor_edit = Util::SpinBox::create(Georeferencing::scaleFactorPrecision(), 0.001, 1000.0);
 	scale_widget_list = {
 		scale_compensation_label,
-		auxiliary_factor_label, scale_factor_edit,
-		combined_factor_label, combined_factor_display
+		auxiliary_factor_label, aux_factor_edit,
+		combined_factor_label, combined_factor_edit
 	};
 	
 	buttons_box = new QDialogButtonBox(
@@ -220,29 +219,32 @@ GeoreferencingDialog::GeoreferencingDialog(
 	edit_layout->addRow(status_label, status_field);
 	edit_layout->addItem(Util::SpacerItem::create(this));
 	
+	edit_layout->addRow(aspect_label);
+	edit_layout->addRow(tr("Control by:"), control_geographic_radio);
+	edit_layout->addRow({}, control_projected_radio);
+	edit_layout->addItem(Util::SpacerItem::create(this));
+
 	edit_layout->addRow(reference_point_label);
-	edit_layout->addRow(tr("Map coordinates:"), map_ref_layout);
-	edit_layout->addRow(projected_ref_label, projected_ref_layout);
 	edit_layout->addRow(tr("Geographic coordinates:"), geographic_ref_layout);
+	edit_layout->addRow(projected_ref_label, projected_ref_layout);
+	edit_layout->addRow(tr("Map coordinates:"), map_ref_layout);
 	QSpacerItem *half_space = Util::SpacerItem::create(this);
 	const auto size = half_space->minimumSize();
 	half_space->changeSize(size.width(), size.height()/2);
 	edit_layout->addItem(half_space);
 	edit_layout->addRow(show_refpoint_label, link_label);
-	edit_layout->addRow(tr("On CRS changes, keep:"), keep_projected_radio);
-	edit_layout->addRow({}, keep_geographic_radio);
 	edit_layout->addItem(Util::SpacerItem::create(this));
 	
 	edit_layout->addRow(map_north_label);
 	edit_layout->addRow(tr("Declination:"), declination_layout);
-	edit_layout->addRow(tr("Grivation:"), grivation_label);
+	edit_layout->addRow(tr("Grivation:"), grivation_edit);
 
 	bool control_scale_factor = Settings::getInstance().getSetting(Settings::MapGeoreferencing_ControlScaleFactor).toBool();
 	edit_layout->addItem(Util::SpacerItem::create(this));
 	edit_layout->addRow(show_scale_check);
 	edit_layout->addRow(scale_compensation_label);
-	edit_layout->addRow(auxiliary_factor_label, scale_factor_edit);
-	edit_layout->addRow(combined_factor_label, combined_factor_display);
+	edit_layout->addRow(auxiliary_factor_label, aux_factor_edit);
+	edit_layout->addRow(combined_factor_label, combined_factor_edit);
 	show_scale_check->setChecked(control_scale_factor);
 	for (auto scale_widget: scale_widget_list)
 		scale_widget->setVisible(control_scale_factor);
@@ -258,7 +260,8 @@ GeoreferencingDialog::GeoreferencingDialog(
 	connect(crs_selector, &CRSSelector::crsChanged, this, &GeoreferencingDialog::crsEdited);
 	
 	connect(show_scale_check, &QAbstractButton::clicked, this, &GeoreferencingDialog::showScaleChanged);
-	connect(scale_factor_edit, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &GeoreferencingDialog::auxiliaryFactorEdited);
+	connect(aux_factor_edit, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &GeoreferencingDialog::auxiliaryFactorEdited);
+	connect(combined_factor_edit, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &GeoreferencingDialog::combinedFactorEdited);
 	
 	connect(map_x_edit, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &GeoreferencingDialog::mapRefChanged);
 	connect(map_y_edit, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &GeoreferencingDialog::mapRefChanged);
@@ -269,10 +272,11 @@ GeoreferencingDialog::GeoreferencingDialog(
 	
 	connect(lat_edit, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &GeoreferencingDialog::latLonEdited);
 	connect(lon_edit, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &GeoreferencingDialog::latLonEdited);
-	connect(keep_geographic_radio, &QRadioButton::toggled, this, &GeoreferencingDialog::keepCoordsChanged);
+	connect(control_geographic_radio, &QRadioButton::toggled, this, &GeoreferencingDialog::controlAspectChanged);
 	
 	connect(declination_edit, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &GeoreferencingDialog::declinationEdited);
 	connect(declination_button, &QPushButton::clicked, this, &GeoreferencingDialog::requestDeclination);
+	connect(grivation_edit, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &GeoreferencingDialog::grivationEdited);
 	
 	connect(buttons_box, &QDialogButtonBox::accepted, this, &GeoreferencingDialog::accept);
 	connect(buttons_box, &QDialogButtonBox::rejected, this, &GeoreferencingDialog::reject);
@@ -287,6 +291,8 @@ GeoreferencingDialog::GeoreferencingDialog(
 	
 	transformationChanged();
 	georefStateChanged();
+	if (georef->getState() == Georeferencing::Local)
+		projectionChanged();
 	declinationChanged();
 	auxiliaryFactorChanged();
 }
@@ -300,13 +306,14 @@ void GeoreferencingDialog::georefStateChanged()
 	{
 	case Georeferencing::Local:
 		crs_selector->setCurrentItem(Georeferencing::Local);
-		keep_geographic_radio->setEnabled(false);
-		keep_projected_radio->setChecked(true);
+		control_projected_radio->setChecked(true);
 		break;
 	case Georeferencing::BrokenGeospatial:
 	case Georeferencing::Geospatial:
 		projectionChanged();
-		keep_geographic_radio->setEnabled(true);
+		if (!control_projected_selected)
+			control_geographic_radio->setChecked(true);
+		break;
 	}
 	
 	updateWidgets();
@@ -318,7 +325,7 @@ void GeoreferencingDialog::transformationChanged()
 	ScopedMultiSignalsBlocker block(
 	            map_x_edit, map_y_edit,
 	            easting_edit, northing_edit,
-	            scale_factor_edit
+	            grivation_edit, combined_factor_edit
 	);
 	
 	setValueIfChanged(map_x_edit, georef->getMapRefPoint().x());
@@ -327,10 +334,8 @@ void GeoreferencingDialog::transformationChanged()
 	setValueIfChanged(easting_edit, georef->getProjectedRefPoint().x());
 	setValueIfChanged(northing_edit, georef->getProjectedRefPoint().y());
 	
-	setValueIfChanged(scale_factor_edit, georef->getAuxiliaryScaleFactor());
-	
-	updateGrivation();
-	updateCombinedFactor();
+	setValueIfChanged(grivation_edit, georef->getGrivation());
+	setValueIfChanged(combined_factor_edit, georef->getCombinedScaleFactor());
 }
 
 // slot
@@ -390,9 +395,8 @@ void GeoreferencingDialog::declinationChanged()
 // slot
 void GeoreferencingDialog::auxiliaryFactorChanged()
 {
-	const QSignalBlocker block(scale_factor_edit);
-	setValueIfChanged(scale_factor_edit, georef->getAuxiliaryScaleFactor());
-	updateCombinedFactor();
+	const QSignalBlocker block(aux_factor_edit);
+	setValueIfChanged(aux_factor_edit, georef->getAuxiliaryScaleFactor());
 }
 
 void GeoreferencingDialog::requestDeclination(bool no_confirm)
@@ -452,13 +456,13 @@ bool GeoreferencingDialog::setMapRefPoint(const MapCoord& coords)
 
 void GeoreferencingDialog::setKeepProjectedRefCoords()
 {
-	keep_projected_radio->setChecked(true);
+	control_projected_radio->setChecked(true);
 	reset_button->setEnabled(true);
 }
 
 void GeoreferencingDialog::setKeepGeographicRefCoords()
 {
-	keep_geographic_radio->setChecked(true);
+	control_geographic_radio->setChecked(true);
 	reset_button->setEnabled(true);
 }
 
@@ -469,21 +473,12 @@ void GeoreferencingDialog::showHelp()
 
 void GeoreferencingDialog::reset()
 {
-	scale_factor_locked = grivation_locked = ( initial_georef->getState() != Georeferencing::Geospatial );
 	*georef.data() = *initial_georef;
 	reset_button->setEnabled(false);
 }
 
 void GeoreferencingDialog::accept()
 {
-	if (grivation_locked)
-	{
-		georef->updateGrivation();
-	}
-	if (scale_factor_locked)
-	{
-		georef->updateCombinedScaleFactor();
-	}
 	// Update of geographic locations (of any objects) is implicit.
 	
 	GeoDialogCommon::accept();
@@ -491,6 +486,9 @@ void GeoreferencingDialog::accept()
 
 void GeoreferencingDialog::updateWidgets()
 {
+	const bool geographic_aspect_enabled = control_geographic_radio->isChecked();
+	bool projected_aspect_enabled = !geographic_aspect_enabled;
+
 	ref_point_button->setEnabled(controller);
 	
 	if (crs_selector->currentCRSTemplate())
@@ -501,12 +499,18 @@ void GeoreferencingDialog::updateWidgets()
 	bool geographic_coords_enabled = crs_selector->currentCustomItem() != Georeferencing::Local;
 	status_label->setVisible(geographic_coords_enabled);
 	status_field->setVisible(geographic_coords_enabled);
-	lat_edit->setEnabled(geographic_coords_enabled);
-	lon_edit->setEnabled(geographic_coords_enabled);
+	easting_edit->setEnabled(projected_aspect_enabled);
+	northing_edit->setEnabled(projected_aspect_enabled);
+	lat_edit->setEnabled(geographic_aspect_enabled);
+	lon_edit->setEnabled(geographic_aspect_enabled);
 	link_label->setEnabled(geographic_coords_enabled);
-	//keep_geographic_radio->setEnabled(geographic_coords_enabled);
 	
+	
+	declination_edit->setEnabled(geographic_aspect_enabled);
+	grivation_edit->setEnabled(projected_aspect_enabled);
 	updateDeclinationButton();
+	aux_factor_edit->setEnabled(geographic_aspect_enabled);
+	combined_factor_edit->setEnabled(projected_aspect_enabled);
 	
 	buttons_box->button(QDialogButtonBox::Ok)->setEnabled(georef->getState() != Georeferencing::BrokenGeospatial);
 }
@@ -522,25 +526,22 @@ void GeoreferencingDialog::updateDeclinationButton()
 		 crs_edit->getSelectedCustomItemId() == -1);
 	*/
 	bool enabled = !declination_query_in_progress
-		&& (lat_edit->isEnabled() || georef->getState() == Georeferencing::Geospatial);
+		&& (lat_edit->isEnabled()
+			|| (georef->getState() == Georeferencing::Geospatial && grivation_edit->isEnabled()));
 	declination_button->setEnabled(enabled);
 	declination_button->setText(declination_query_in_progress ? tr("Loading...") : tr("Lookup..."));
 }
 
-void GeoreferencingDialog::updateCombinedFactor()
+void GeoreferencingDialog::combinedFactorEdited(double value)
 {
-	QString text = tr("%1", "scale factor value").arg(QLocale().toString(georef->getCombinedScaleFactor(), 'f', Georeferencing::scaleFactorPrecision()));
-	if (scale_factor_locked)
-		text.append(QString::fromLatin1(" (%1)").arg(tr("locked")));
-	combined_factor_display->setText(text);
+	georef->setCombinedScaleFactor(value);
+	reset_button->setEnabled(true);
 }
 
-void GeoreferencingDialog::updateGrivation()
+void GeoreferencingDialog::grivationEdited(double value)
 {
-	QString text = tr("%1 °", "degree value").arg(QLocale().toString(georef->getGrivation(), 'f', Georeferencing::declinationPrecision()));
-	if (grivation_locked)
-		text.append(QString::fromLatin1(" (%1)").arg(tr("locked")));
-	grivation_label->setText(text);
+	georef->setGrivation(value);
+	reset_button->setEnabled(true);
 }
 
 void GeoreferencingDialog::crsEdited()
@@ -559,10 +560,6 @@ void GeoreferencingDialog::crsEdited()
 	case Georeferencing::Local:
 		// Local
 		georef_copy.setLocalState();
-		grivation_locked = true;
-		updateGrivation();
-		scale_factor_locked = true;
-		updateCombinedFactor();
 		break;
 	case -1:
 		// CRS from list
@@ -571,10 +568,10 @@ void GeoreferencingDialog::crsEdited()
 			spec = QStringLiteral(" ");  // intentionally non-empty: enforce non-local state.
 		georef_copy.setProjectedCRS(crs_template->id(), spec, crs_selector->parameters());
 		Q_ASSERT(georef_copy.getState() != Georeferencing::Local);
-		if (keep_geographic_radio->isChecked())
-			georef_copy.setGeographicRefPoint(georef->getGeographicRefPoint(), !grivation_locked ? Georeferencing::UpdateGridParameter : Georeferencing::NoUpdate, !scale_factor_locked ? Georeferencing::UpdateGridParameter : Georeferencing::NoUpdate);
+		if (control_geographic_radio->isChecked())
+			georef_copy.setGeographicRefPoint(georef->getGeographicRefPoint(), Georeferencing::UpdateGridParameter);
 		else
-			georef_copy.setProjectedRefPoint(georef->getProjectedRefPoint(), !grivation_locked ? Georeferencing::UpdateGridParameter : Georeferencing::NoUpdate, !scale_factor_locked ? Georeferencing::UpdateGridParameter : Georeferencing::NoUpdate);
+			georef_copy.setProjectedRefPoint(georef->getProjectedRefPoint(), Georeferencing::UpdateGridParameter);
 		break;
 	}
 	
@@ -592,11 +589,6 @@ void GeoreferencingDialog::showScaleChanged(bool checked)
 
 void GeoreferencingDialog::auxiliaryFactorEdited(double value)
 {
-	if (scale_factor_locked)
-	{
-		scale_factor_locked = false;
-		updateCombinedFactor();
-	}
 	georef->setAuxiliaryScaleFactor(value);
 	reset_button->setEnabled(true);
 }
@@ -609,51 +601,29 @@ void GeoreferencingDialog::mapRefChanged()
 
 void GeoreferencingDialog::eastingNorthingEdited()
 {
-	const QSignalBlocker block1(keep_geographic_radio), block2(keep_projected_radio);
 	double easting   = easting_edit->value();
 	double northing  = northing_edit->value();
-	georef->setProjectedRefPoint(QPointF(easting, northing), !grivation_locked ? Georeferencing::UpdateGridParameter : Georeferencing::NoUpdate, !scale_factor_locked ? Georeferencing::UpdateGridParameter : Georeferencing::NoUpdate);
-	keep_projected_radio->setChecked(true);
+	georef->setProjectedRefPoint(QPointF(easting, northing), Georeferencing::UpdateGeographicParameter);
 	reset_button->setEnabled(true);
 }
 
 void GeoreferencingDialog::latLonEdited()
 {
-	const QSignalBlocker block1(keep_geographic_radio), block2(keep_projected_radio);
 	double latitude  = lat_edit->value();
 	double longitude = lon_edit->value();
-	georef->setGeographicRefPoint(LatLon(latitude, longitude), !grivation_locked ? Georeferencing::UpdateGridParameter : Georeferencing::NoUpdate, !scale_factor_locked ? Georeferencing::UpdateGridParameter : Georeferencing::NoUpdate);
-	keep_geographic_radio->setChecked(true);
+	georef->setGeographicRefPoint(LatLon(latitude, longitude), Georeferencing::UpdateGridParameter);
 	reset_button->setEnabled(true);
 }
 
-void GeoreferencingDialog::keepCoordsChanged()
+void GeoreferencingDialog::controlAspectChanged()
 {
-	if (keep_geographic_radio->isChecked())
-	{
-		if (grivation_locked)
-		{
-			grivation_locked = false;
-			updateGrivation();
-			georef->updateGrivation();
-		}
-		if (scale_factor_locked)
-		{
-			scale_factor_locked = false;
-			updateCombinedFactor();
-			georef->updateCombinedScaleFactor();
-		}
-	}
-	reset_button->setEnabled(true);
+	if (georef->getState() != Georeferencing::Local || control_geographic_radio->isChecked())
+		control_projected_selected = control_projected_radio->isChecked();
+	updateWidgets();
 }
 
 void GeoreferencingDialog::declinationEdited(double value)
 {
-	if (grivation_locked)
-	{
-		grivation_locked = false;
-		updateGrivation();
-	}
 	georef->setDeclination(value);
 	reset_button->setEnabled(true);
 }
@@ -689,7 +659,14 @@ void GeoreferencingDialog::declinationReplyFinished(QNetworkReply* reply)
 								double declination = text.toDouble(&ok);
 								if (ok)
 								{
-									setValueIfChanged(declination_edit, Georeferencing::roundDeclination(declination));
+									if (control_geographic_radio->isChecked())
+										setValueIfChanged(declination_edit, Georeferencing::roundDeclination(declination));
+									else
+									{
+										double grivation = declination - georef->getConvergence();
+
+										setValueIfChanged(grivation_edit, Georeferencing::roundDeclination(grivation));
+									}
 									return;
 								}
 								else 
