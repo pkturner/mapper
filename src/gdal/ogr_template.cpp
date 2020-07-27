@@ -177,9 +177,7 @@ std::unique_ptr<Georeferencing> OgrTemplate::makeOrthographicGeoreferencing(cons
 		georef->setProjectedCRS(QString{},
 		                             QString::fromLatin1("+proj=ortho +datum=WGS84 +ellps=WGS84 +units=m +lat_0=%1 +lon_0=%2 +no_defs")
 		                             .arg(center.latitude()).arg(center.longitude()));
-		georef->setProjectedRefPoint({}, Georeferencing::NoUpdate, Georeferencing::NoUpdate);
-		georef->setCombinedScaleFactor(1.0);
-		georef->setGrivation(0.0);
+		georef->setProjectedRefPoint({}, Georeferencing::UpdateGeographicParameter, Georeferencing::UpdateGeographicParameter);
 	}
 	else
 	{
@@ -208,9 +206,7 @@ std::unique_ptr<Georeferencing> OgrTemplate::makeGeoreferencing(const QString& s
 	auto georef = std::make_unique<Georeferencing>();
 	georef->setScaleDenominator(int(map->getScaleDenominator()));
 	georef->setProjectedCRS(QString{}, spec);
-	georef->setProjectedRefPoint({}, Georeferencing::NoUpdate, Georeferencing::NoUpdate);
-	georef->setCombinedScaleFactor(1.0);
-	georef->setGrivation(0.0);
+	georef->setProjectedRefPoint({}, Georeferencing::UpdateGeographicParameter, Georeferencing::UpdateGeographicParameter);
 	return georef;
 }
 

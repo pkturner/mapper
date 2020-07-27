@@ -594,9 +594,7 @@ bool XMLFileImporter::importImplementation()
 			auto georef = map->getGeoreferencing();
 			auto ref_point = MapCoordF { georef.getMapRefPoint() };
 			auto new_projected = georef.toProjectedCoords(ref_point + offset_f);
-			georef.setProjectedRefPoint(new_projected, Georeferencing::NoUpdate, Georeferencing::NoUpdate);
-			georef.setCombinedScaleFactor(georef.getCombinedScaleFactor()); // keep combined scale factor
-			georef.setGrivation(georef.getGrivation());  // keep grivation, update declination
+			georef.setProjectedRefPoint(new_projected, Georeferencing::UpdateGeographicParameter, Georeferencing::UpdateGeographicParameter);
 			map->setGeoreferencing(georef);
 		}
 	}
