@@ -852,7 +852,7 @@ void Georeferencing::setMapRefPoint(const MapCoord& point)
 	}
 }
 
-void Georeferencing::setProjectedRefPoint(const QPointF& point, bool update_grivation, bool update_scale_factor)
+void Georeferencing::setProjectedRefPoint(const QPointF& point, UpdateOption update_grivation, UpdateOption update_scale_factor)
 {
 	if (projected_ref_point != point || getState() == Geospatial)
 	{
@@ -871,10 +871,28 @@ void Georeferencing::setProjectedRefPoint(const QPointF& point, bool update_griv
 			{
 				geographic_ref_point = new_geo_ref_point;
 				updateGridCompensation();
-				if (update_grivation)
+				switch (update_grivation)
+				{
+				case UpdateGridParameter:
 					updateGrivation();
-				if (update_scale_factor)
+					break;
+				case UpdateGeographicParameter:
+					initDeclination();
+					break;
+				default:
+					break;
+				}
+				switch (update_scale_factor)
+				{
+				case UpdateGridParameter:
 					updateCombinedScaleFactor();
+					break;
+				case UpdateGeographicParameter:
+					initAuxiliaryScaleFactor();
+					break;
+				default:
+					break;
+				}
 				emit projectionChanged();
 			}
 		}
@@ -972,7 +990,7 @@ void Georeferencing::updateGridCompensation()
 	grid_scale_factor = sqrt(determinant);
 }
 
-void Georeferencing::setGeographicRefPoint(LatLon lat_lon, bool update_grivation, bool update_scale_factor)
+void Georeferencing::setGeographicRefPoint(LatLon lat_lon, UpdateOption update_grivation, UpdateOption update_scale_factor)
 {
 	bool geo_ref_point_changed = geographic_ref_point != lat_lon;
 	if (geo_ref_point_changed || getState() == Geospatial)
@@ -987,10 +1005,28 @@ void Georeferencing::setGeographicRefPoint(LatLon lat_lon, bool update_grivation
 		{
 			projected_ref_point = new_projected_ref;
 			updateGridCompensation();
-			if (update_grivation)
+			switch (update_grivation)
+			{
+			case UpdateGridParameter:
 				updateGrivation();
-			if (update_scale_factor)
+				break;
+			case UpdateGeographicParameter:
+				initDeclination();
+				break;
+			default:
+				break;
+			}
+			switch (update_scale_factor)
+			{
+			case UpdateGridParameter:
 				updateCombinedScaleFactor();
+				break;
+			case UpdateGeographicParameter:
+				initAuxiliaryScaleFactor();
+				break;
+			default:
+				break;
+			}
 			updateTransformation();
 			emit projectionChanged();
 		}

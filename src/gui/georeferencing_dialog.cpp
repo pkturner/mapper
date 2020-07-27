@@ -675,9 +675,9 @@ void GeoreferencingDialog::crsEdited()
 		georef_copy.setProjectedCRS(crs_template->id(), spec, crs_selector->parameters());
 		Q_ASSERT(georef_copy.getState() != Georeferencing::Local);
 		if (keep_geographic_radio->isChecked())
-			georef_copy.setGeographicRefPoint(georef->getGeographicRefPoint(), !grivation_locked, !scale_factor_locked);
+			georef_copy.setGeographicRefPoint(georef->getGeographicRefPoint(), !grivation_locked ? Georeferencing::UpdateGridParameter : Georeferencing::NoUpdate, !scale_factor_locked ? Georeferencing::UpdateGridParameter : Georeferencing::NoUpdate);
 		else
-			georef_copy.setProjectedRefPoint(georef->getProjectedRefPoint(), !grivation_locked, !scale_factor_locked);
+			georef_copy.setProjectedRefPoint(georef->getProjectedRefPoint(), !grivation_locked ? Georeferencing::UpdateGridParameter : Georeferencing::NoUpdate, !scale_factor_locked ? Georeferencing::UpdateGridParameter : Georeferencing::NoUpdate);
 		break;
 	}
 	
@@ -725,7 +725,7 @@ void GeoreferencingDialog::eastingNorthingEdited()
 	const QSignalBlocker block1(keep_geographic_radio), block2(keep_projected_radio);
 	double easting   = easting_edit->value();
 	double northing  = northing_edit->value();
-	georef->setProjectedRefPoint(QPointF(easting, northing), !grivation_locked, !scale_factor_locked);
+	georef->setProjectedRefPoint(QPointF(easting, northing), !grivation_locked ? Georeferencing::UpdateGridParameter : Georeferencing::NoUpdate, !scale_factor_locked ? Georeferencing::UpdateGridParameter : Georeferencing::NoUpdate);
 	keep_projected_radio->setChecked(true);
 	reset_button->setEnabled(true);
 }
@@ -735,7 +735,7 @@ void GeoreferencingDialog::latLonEdited()
 	const QSignalBlocker block1(keep_geographic_radio), block2(keep_projected_radio);
 	double latitude  = lat_edit->value();
 	double longitude = lon_edit->value();
-	georef->setGeographicRefPoint(LatLon(latitude, longitude), !grivation_locked, !scale_factor_locked);
+	georef->setGeographicRefPoint(LatLon(latitude, longitude), !grivation_locked ? Georeferencing::UpdateGridParameter : Georeferencing::NoUpdate, !scale_factor_locked ? Georeferencing::UpdateGridParameter : Georeferencing::NoUpdate);
 	keep_geographic_radio->setChecked(true);
 	reset_button->setEnabled(true);
 }
