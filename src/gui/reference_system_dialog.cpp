@@ -271,6 +271,9 @@ ReferenceSystemDialog::ReferenceSystemDialog(
 	georefStateChanged();
 	declinationChanged();
 	auxiliaryFactorChanged();
+
+	// Ensure no mismatch between geographic and projected reference points.
+	georef->setProjectedRefPoint(georef->getProjectedRefPoint(), Georeferencing::UpdateGeographicParameter);
 }
 
 // static method
