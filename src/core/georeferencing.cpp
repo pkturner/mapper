@@ -1163,6 +1163,8 @@ bool Georeferencing::setProjectedCRS(const QString& id, QString spec, std::vecto
 		}
 	}
 	
+	bool has_former_convergence = getState() == Geospatial;
+
 	// Changes in params shall already be recorded in spec
 	if (projected_crs_id != id
 	    || projected_crs_spec != spec
@@ -1199,6 +1201,7 @@ bool Georeferencing::setProjectedCRS(const QString& id, QString spec, std::vecto
 			break;
 		case UpdateGridParameter:
 			{
+				double former_convergence = convergence;
 				if (getState() == Geospatial)
 					updateGridCompensation();
 				if (has_geographic_ref_point)
@@ -1208,7 +1211,12 @@ bool Georeferencing::setProjectedCRS(const QString& id, QString spec, std::vecto
 					if (proj_ok)
 					{
 						projected_ref_point = new_projected_ref;
-						updateGrivation();
+						if (has_declination)
+							updateGrivation();
+						else if (has_former_convergence)
+							grivation = roundDeclination(grivation + former_convergence - convergence);
+						else
+							ok = false;
 						updateCombinedScaleFactor();
 						updateTransformation();
 					}
