@@ -238,6 +238,11 @@ protected:
 	 */
 	void grivationEdited(double value);
 	
+	/**
+	 * Implements a click of Clear geographic button.
+	 */
+	void clearGeographicParameters();
+	
 private:
 	/* Internal state */
 	bool allow_no_georeferencing;
@@ -247,6 +252,7 @@ private:
 	
 	/* GUI elements */
 	CRSSelector* crs_selector;
+	QPushButton* clear_geographic_button;
 	QLabel* status_label;
 	QLabel* status_field;
 	

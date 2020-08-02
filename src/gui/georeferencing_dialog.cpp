@@ -38,6 +38,7 @@
 #include <QLabel>
 #include <QLatin1Char>
 #include <QLatin1String>
+#include <QMargins>
 #include <QMessageBox>
 #include <QPointF>
 #include <QPushButton>
@@ -71,6 +72,8 @@
 #include "gui/util_gui.h"
 #include "util/backports.h"  // IWYU pragma: keep
 #include "util/scoped_signals_blocker.h"
+
+class QSpacerItem;
 
 
 namespace OpenOrienteering {
@@ -113,6 +116,14 @@ GeoreferencingDialog::GeoreferencingDialog(
 	
 	crs_selector = new CRSSelector(*georef, nullptr);
 	crs_selector->addCustomItem(tr("- local -"), Georeferencing::Local);
+	clear_geographic_button = new QPushButton(tr("Clear geographic"));
+
+	QWidget *crs_row_widget = new QWidget();
+	auto crs_layout = new QHBoxLayout(crs_row_widget);
+	crs_layout->setContentsMargins(QMargins());
+	crs_layout->addWidget(crs_selector, 0, Qt::AlignLeft);
+	crs_layout->addStretch(1);
+	crs_layout->addWidget(clear_geographic_button, 0, Qt::AlignRight);
 	
 	status_label = new QLabel(tr("Status:"));
 	status_field = new QLabel();
@@ -215,8 +226,8 @@ GeoreferencingDialog::GeoreferencingDialog(
 	auto edit_layout = new QFormLayout();
 
 	edit_layout->addRow(map_crs_label);
-	edit_layout->addRow(tr("&Coordinate reference system:"), crs_selector);
-	crs_selector->setDialogLayout(edit_layout);
+	edit_layout->addRow(tr("&Coordinate reference system:"), crs_row_widget);
+	crs_selector->setDialogLayout(edit_layout, crs_row_widget);
 	edit_layout->addRow(status_label, status_field);
 	edit_layout->addItem(Util::SpacerItem::create(this));
 	
@@ -259,6 +270,7 @@ GeoreferencingDialog::GeoreferencingDialog(
 	setLayout(layout);
 	
 	connect(crs_selector, &CRSSelector::crsChanged, this, &GeoreferencingDialog::crsEdited);
+	connect(clear_geographic_button, &QPushButton::clicked, this, &GeoreferencingDialog::clearGeographicParameters);
 	
 	connect(show_scale_check, &QAbstractButton::clicked, this, &GeoreferencingDialog::showScaleChanged);
 	connect(aux_factor_edit, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &GeoreferencingDialog::auxiliaryFactorEdited);
@@ -506,6 +518,10 @@ void GeoreferencingDialog::updateWidgets()
 	bool projected_aspect_enabled = !geographic_aspect_enabled;
 
 	ref_point_button->setEnabled(controller);
+	clear_geographic_button->setEnabled(georef->getState() == Georeferencing::Local
+										&& (georef->getAuxiliaryScaleFactor() != 1.0
+											|| georef->hasGeographicRefPoint()
+											|| georef->hasDeclination()));
 	
 	if (crs_selector->currentCRSTemplate())
 		projected_ref_label->setText(crs_selector->currentCRSTemplate()->coordinatesName(crs_selector->parameters()) + QLatin1Char(':'));
@@ -598,6 +614,12 @@ void GeoreferencingDialog::crsEdited()
 	// Apply all changes at once
 	*georef = georef_copy;
 	reset_button->setEnabled(true);
+}
+
+void GeoreferencingDialog::clearGeographicParameters()
+{
+	georef->clearGeographicParameters();
+	control_projected_radio->setChecked(true);
 }
 
 void GeoreferencingDialog::showScaleChanged(bool checked)
