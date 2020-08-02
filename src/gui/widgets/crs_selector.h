@@ -82,7 +82,7 @@ public:
 	 * This is to be called once. However, it will not create the parameter
 	 * fields for the current selection.
 	 */
-	void setDialogLayout(QFormLayout* dialog_layout);
+	void setDialogLayout(QFormLayout* dialog_layout, QWidget* row_widget = nullptr);
 	
 	
 	/** 
@@ -184,6 +184,7 @@ protected:
 private:
 	const Georeferencing& georef;
 	QFormLayout* dialog_layout;
+	QWidget* row_widget;
 	int num_custom_items;
 	const CRSTemplate* configured_crs;
 };

@@ -78,6 +78,7 @@ CRSSelector::CRSSelector(const Georeferencing& georef, QWidget* parent)
  : QComboBox(parent)
  , georef(georef)
  , dialog_layout(nullptr)
+ , row_widget(nullptr)
  , num_custom_items(0)
  , configured_crs(nullptr)
 {
@@ -89,11 +90,12 @@ CRSSelector::CRSSelector(const Georeferencing& georef, QWidget* parent)
 
 CRSSelector::~CRSSelector() = default;
 
-void CRSSelector::setDialogLayout(QFormLayout* dialog_layout)
+void CRSSelector::setDialogLayout(QFormLayout* dialog_layout, QWidget* row_widget)
 {
 	Q_ASSERT(dialog_layout && !this->dialog_layout);
 	
 	this->dialog_layout = dialog_layout;
+	this->row_widget = row_widget ? row_widget : const_cast<CRSSelector*>(this);
 	
 	using TakingIntArgument = void (QComboBox::*)(int);
 	connect(this, (TakingIntArgument)&QComboBox::currentIndexChanged, 
@@ -191,7 +193,7 @@ std::vector<QString> CRSSelector::parameters() const
 		
 		int row;
 		QFormLayout::ItemRole role;
-		dialog_layout->getWidgetPosition(const_cast<CRSSelector*>(this), &row, &role);
+		dialog_layout->getWidgetPosition(row_widget, &row, &role);
 		
 		for (auto&& param : crs->parameters())
 		{
@@ -252,7 +254,7 @@ void CRSSelector::configureParameterFields(const CRSTemplate* crs, const std::ve
 	{
 		int row;
 		QFormLayout::ItemRole role;
-		dialog_layout->getWidgetPosition(this, &row, &role);
+		dialog_layout->getWidgetPosition(row_widget, &row, &role);
 		
 		// Set the new parameter values.
 		auto parameters = crs->parameters();
@@ -286,7 +288,7 @@ void CRSSelector::addParameterFields(const CRSTemplate* crs)
 	{
 		int row;
 		QFormLayout::ItemRole role;
-		dialog_layout->getWidgetPosition(this, &row, &role);
+		dialog_layout->getWidgetPosition(row_widget, &row, &role);
 		
 		// Add the labels and fields of the new parameters.
 		for (auto&& parameter : crs->parameters())
@@ -317,7 +319,7 @@ void CRSSelector::removeParameterFields()
 	{
 		int crs_row;
 		QFormLayout::ItemRole role;
-		dialog_layout->getWidgetPosition(this, &crs_row, &role);
+		dialog_layout->getWidgetPosition(row_widget, &crs_row, &role);
 		
 		// Remove the labels and fields of the old parameters.
 		for (int row = dialog_layout->rowCount()-1; row > crs_row; --row)
@@ -358,7 +360,7 @@ void CRSSelector::changeEvent(QEvent* event)
 			
 			int row;
 			QFormLayout::ItemRole role;
-			dialog_layout->getWidgetPosition(this, &row, &role);
+			dialog_layout->getWidgetPosition(row_widget, &row, &role);
 			
 			// Remove the labels and fields of the old parameters.
 			for (++row; dialog_layout->rowCount() > row; ++row)
