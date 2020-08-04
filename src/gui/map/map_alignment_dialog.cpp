@@ -352,8 +352,8 @@ void MapAlignmentDialog::reset()
 
 void MapAlignmentDialog::accept()
 {
-	auto const declination_change_degrees = georef->getDeclination() - initial_georef->getDeclination();
-	auto const scale_factor_change = georef->getAuxiliaryScaleFactor() / initial_georef->getAuxiliaryScaleFactor();
+	auto const grivation_change_degrees = georef->getGrivation() - initial_georef->getGrivation();
+	auto const scale_factor_change = georef->getCombinedScaleFactor() / initial_georef->getCombinedScaleFactor();
 	auto const scale_change = double(georef->getScaleDenominator()) / double(initial_georef->getScaleDenominator());
 
 	MapCoord center = initial_georef->getMapRefPoint();
@@ -361,7 +361,7 @@ void MapAlignmentDialog::accept()
 	const bool adjust_reference_point = true;
 	const bool adjust_declination = false;
 	const bool adjust_templates = adjust_templates_check->isChecked();
-	const double rotation = M_PI * declination_change_degrees / 180;
+	const double rotation = M_PI * grivation_change_degrees / 180;
 	map->rotateMap(rotation, center, adjust_reference_point, adjust_declination, adjust_templates);
 	map->changeScale(georef->getScaleDenominator(), 1.0/scale_factor_change, center, adjust_symbols, true, adjust_reference_point, false, adjust_templates);
 
