@@ -52,6 +52,7 @@
 #include <QSignalBlocker>
 #include <QSize>
 #include <QSpacerItem>
+#include <QSpinBox>
 #include <QStringRef>
 #include <QTimer>
 #include <QUrl>
@@ -76,6 +77,7 @@
 #include "gui/main_window.h"
 #include "gui/map/map_editor.h"
 #include "gui/util_gui.h"
+#include "templates/template.h"
 #include "util/backports.h"  // IWYU pragma: keep
 #include "util/scoped_signals_blocker.h"
 
@@ -137,8 +139,12 @@ MapAlignmentDialog::MapAlignmentDialog(
 	
 	grivation_edit = Util::SpinBox::create<Util::RotationalDegrees>();
 	
+	scale_edit = Util::SpinBox::create(1, 9999999, {}, 500);
+	scale_edit->setPrefix(QStringLiteral("1 : "));
+	scale_edit->setButtonSymbols(QAbstractSpinBox::NoButtons);
+	scale_edit->setValue(static_cast<int>(map->getScaleDenominator()));
+	
 	show_scale_check = new QCheckBox(tr("Show scale factors"));
-	auto scale_compensation_label = Util::Headline::create(tr("Scale compensation"));
 	
 	/*: The combined scale factor is the ratio between a length on the ground
 	    and the corresponding length on the curved earth model. It is applied
@@ -152,7 +158,6 @@ MapAlignmentDialog::MapAlignmentDialog(
 	auto auxiliary_factor_label = new QLabel(tr("Auxiliary scale factor:"));
 	aux_factor_edit = Util::SpinBox::create(Georeferencing::scaleFactorPrecision(), 0.001, 1000.0);
 	scale_widget_list = {
-		scale_compensation_label,
 		auxiliary_factor_label, aux_factor_edit,
 		combined_factor_label, combined_factor_edit
 	};
@@ -176,14 +181,36 @@ MapAlignmentDialog::MapAlignmentDialog(
 
 	bool control_scale_factor = Settings::getInstance().getSetting(Settings::MapGeoreferencing_ControlScaleFactor).toBool();
 	edit_layout->addItem(Util::SpacerItem::create(this));
+	edit_layout->addRow(Util::Headline::create(tr("Scale")));
+	edit_layout->addRow(tr("Scale:"), scale_edit);
 	edit_layout->addRow(show_scale_check);
-	edit_layout->addRow(scale_compensation_label);
 	edit_layout->addRow(auxiliary_factor_label, aux_factor_edit);
 	edit_layout->addRow(combined_factor_label, combined_factor_edit);
 	show_scale_check->setChecked(control_scale_factor);
 	for (auto scale_widget: scale_widget_list)
 		scale_widget->setVisible(control_scale_factor);
 	
+	edit_layout->addItem(Util::SpacerItem::create(this));
+	edit_layout->addRow(Util::Headline::create(tr("Options")));
+
+	adjust_symbols_check = new QCheckBox(tr("Scale symbol sizes"));
+	if (map->getNumSymbols() > 0)
+		adjust_symbols_check->setChecked(true);
+	adjust_symbols_check->setEnabled(false);
+	edit_layout->addRow(adjust_symbols_check);
+	
+	adjust_templates_check = new QCheckBox(tr("Align non-georeferenced templates"));
+	bool have_non_georeferenced_template = false;
+	for (int i = 0; i < map->getNumTemplates() && !have_non_georeferenced_template; ++i)
+		have_non_georeferenced_template = !map->getTemplate(i)->isTemplateGeoreferenced();
+	for (int i = 0; i < map->getNumClosedTemplates() && !have_non_georeferenced_template; ++i)
+		have_non_georeferenced_template = !map->getClosedTemplate(i)->isTemplateGeoreferenced();
+	if (have_non_georeferenced_template)
+		adjust_templates_check->setChecked(true);
+	else
+		adjust_templates_check->setEnabled(false);
+	edit_layout->addRow(adjust_templates_check);
+
 	auto layout = new QVBoxLayout();
 	layout->addLayout(edit_layout);
 	layout->addStretch();
@@ -192,6 +219,7 @@ MapAlignmentDialog::MapAlignmentDialog(
 	
 	setLayout(layout);
 	
+	connect(scale_edit, QOverload<int>::of(&QSpinBox::valueChanged), this, &MapAlignmentDialog::scaleEdited);
 	connect(show_scale_check, &QAbstractButton::clicked, this, &MapAlignmentDialog::showScaleChanged);
 	connect(aux_factor_edit, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &MapAlignmentDialog::auxiliaryFactorEdited);
 	connect(combined_factor_edit, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &MapAlignmentDialog::combinedFactorEdited);
@@ -314,6 +342,11 @@ void MapAlignmentDialog::showHelp()
 void MapAlignmentDialog::reset()
 {
 	*georef.data() = *initial_georef;
+	{
+		const QSignalBlocker block(scale_edit);
+		scale_edit->setValue(initial_georef->getScaleDenominator());
+	}
+	adjust_symbols_check->setEnabled(false);
 	reset_button->setEnabled(false);
 }
 
@@ -321,14 +354,16 @@ void MapAlignmentDialog::accept()
 {
 	auto const declination_change_degrees = georef->getDeclination() - initial_georef->getDeclination();
 	auto const scale_factor_change = georef->getAuxiliaryScaleFactor() / initial_georef->getAuxiliaryScaleFactor();
+	auto const scale_change = double(georef->getScaleDenominator()) / double(initial_georef->getScaleDenominator());
 
 	MapCoord center = initial_georef->getMapRefPoint();
+	const bool adjust_symbols = adjust_symbols_check->isChecked();
 	const bool adjust_reference_point = true;
 	const bool adjust_declination = false;
-	const bool adjust_templates = true;
+	const bool adjust_templates = adjust_templates_check->isChecked();
 	const double rotation = M_PI * declination_change_degrees / 180;
 	map->rotateMap(rotation, center, adjust_reference_point, adjust_declination, adjust_templates);
-	map->changeScale(map->getScaleDenominator(), 1.0/scale_factor_change, center, false, true, adjust_reference_point, false, adjust_templates);
+	map->changeScale(georef->getScaleDenominator(), 1.0/scale_factor_change, center, adjust_symbols, true, adjust_reference_point, false, adjust_templates);
 
 	auto const initial_map_ref_point = initial_georef->getMapRefPoint();
 	// CRSes are identical; no need to go via geographic ref point
@@ -340,7 +375,7 @@ void MapAlignmentDialog::accept()
 	QTransform from_initial;
 	from_initial.translate(shifted_map_ref_point.x(), shifted_map_ref_point.y());
 	from_initial.rotateRadians(-rotation);
-	from_initial.scale(1.0/scale_factor_change, 1.0/scale_factor_change);
+	from_initial.scale(1.0/(scale_change*scale_factor_change), 1.0/(scale_change*scale_factor_change));
 	from_initial.translate(-initial_map_ref_point.x(), -initial_map_ref_point.y());
 
 	// Adjust map's print area.
@@ -387,6 +422,13 @@ void MapAlignmentDialog::combinedFactorEdited(double value)
 void MapAlignmentDialog::grivationEdited(double value)
 {
 	georef->setGrivation(value);
+	reset_button->setEnabled(true);
+}
+
+void MapAlignmentDialog::scaleEdited(int value)
+{
+	georef->setScaleDenominator(value);
+	adjust_symbols_check->setEnabled(map->getNumSymbols() > 0);
 	reset_button->setEnabled(true);
 }
 

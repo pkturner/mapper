@@ -44,6 +44,7 @@ class QMouseEvent;
 class QPushButton;
 class QRadioButton;
 class QNetworkReply;
+class QSpinBox;
 class QWidget;
 
 namespace OpenOrienteering {
@@ -176,6 +177,10 @@ protected:
 	 */
 	void updateDeclinationButton();
 	
+	/**
+	 * Notifies the dialog of a change in the scale denominator.
+	 */
+	void scaleEdited(int value);
 	
 	/**
 	 * Notifies the dialog of a change in the auxiliary scale factor.
@@ -220,10 +225,14 @@ private:
 	QPushButton* declination_button;
 	QDoubleSpinBox* grivation_edit;
 
+	QSpinBox* scale_edit;
 	QCheckBox* show_scale_check;
 	std::vector<QWidget*> scale_widget_list;
 	QDoubleSpinBox* aux_factor_edit;
 	QDoubleSpinBox* combined_factor_edit;
+
+	QCheckBox* adjust_symbols_check;
+	QCheckBox* adjust_templates_check;
 	
 	QPushButton* reset_button;
 	QDialogButtonBox* buttons_box;
