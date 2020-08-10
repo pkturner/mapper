@@ -154,7 +154,6 @@ set(Mapper_Common_SRCS
   
   gui/map/new_map_dialog.cpp
   gui/map/map_alignment_dialog.cpp
-  gui/map/map_dialog_scale.cpp
   gui/map/map_editor.cpp
   gui/map/map_editor_activity.cpp
   gui/map/map_find_feature.cpp

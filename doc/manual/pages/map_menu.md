@@ -20,9 +20,9 @@ Shows the [grid configuration dialog](grid.md).
 
 ---
 
-#### ![ ](../mapper-images/tool-scale.png) Change map scale...
+#### Realign map...
 
-Shows a dialog to change the map scale.
+Shows a dialog to change the map scale, declination, grivation, etc. Changes affect the scale and rotation of objects on the map, while preserving their geolocations.
 
 
 #### ![ ](../mapper-images/tool-rotate.png) Rotate all objects...

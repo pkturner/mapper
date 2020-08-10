@@ -330,8 +330,8 @@ public slots:
 	/** Shows the "scale all symbols" dialog. */
 	void scaleAllSymbolsClicked();
 	
-	/** Shows the ScaleMapDialog. */
-	void scaleMapClicked();
+	/** Shows the MapAlignmentDialog. */
+	void editAlignment();
 	/** Shows the RotateMapDialog. */
 	void rotateMapClicked();
 	/** Shows the StretchMapDialog. */
@@ -357,8 +357,6 @@ public slots:
 	
 	/** Shows the GeoreferencingDialog. */
 	void editGeoreferencing();
-	/** Shows the MapAlignmentDialog. */
-	void editAlignment();
 	
 	/**
 	 * Makes the editor aware of a change of the selected symbols.
@@ -737,7 +735,6 @@ private:
 	QAction* scale_all_symbols_act;
 	QAction* georeferencing_act;
 	QAction* align_map_act;
-	QAction* scale_map_act;
 	QAction* rotate_map_act;
 	QAction* stretch_map_act;
 	QAction* shift_map_act;

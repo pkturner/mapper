@@ -121,7 +121,6 @@
 #include "gui/text_browser_dialog.h"
 #include "gui/util_gui.h"
 #include "gui/map/map_alignment_dialog.h"
-#include "gui/map/map_dialog_scale.h"
 #include "gui/map/map_editor_activity.h"
 #include "gui/map/map_find_feature.h"
 #include "gui/map/map_widget.h"
@@ -464,7 +463,6 @@ void MapEditorController::setEditingInProgress(bool value)
 		// Map menu
 		georeferencing_act->setEnabled(!editing_in_progress);
 		align_map_act->setEnabled(!editing_in_progress);
-		scale_map_act->setEnabled(!editing_in_progress);
 		rotate_map_act->setEnabled(!editing_in_progress);
 		stretch_map_act->setEnabled(!editing_in_progress);
 		shift_map_act->setEnabled(!editing_in_progress);
@@ -1016,9 +1014,8 @@ void MapEditorController::createActions()
 	scale_all_symbols_act = newAction("scaleall", tr("Scale all symbols..."), this, SLOT(scaleAllSymbolsClicked()), nullptr, tr("Scale the whole symbol set"), "map_menu.html");
 	georeferencing_act = newAction("georef", tr("Set georeferencing..."), this, SLOT(editGeoreferencing()), nullptr, QString{}, "georeferencing.html");
 	align_map_act = newAction("alignmap", tr("Realign map..."), this, SLOT(editAlignment()), nullptr, QString{}, "georeferencing.html");
-	scale_map_act = newAction("scalemap", tr("Change map scale..."), this, SLOT(scaleMapClicked()), "tool-scale.png", tr("Change the map scale and adjust map objects and symbol sizes"), "map_menu.html");
 	rotate_map_act = newAction("rotatemap", tr("Rotate all objects..."), this, SLOT(rotateMapClicked()), "tool-rotate.png", tr("Rotate the whole map"), "map_menu.html");
-	stretch_map_act = newAction("stretchmap", tr("Scale all objects..."), this, SLOT(stretchMapClicked()), nullptr, tr("Scale the whole map"), "map_menu.html");
+	stretch_map_act = newAction("stretchmap", tr("Scale all objects..."), this, SLOT(stretchMapClicked()), "tool-scale.png", tr("Scale the whole map"), "map_menu.html");
 	shift_map_act = newAction("shiftmap", tr("Shift all objects..."), this, SLOT(shiftMapClicked()), nullptr, tr("Shift the whole map"), "map_menu.html");
 	map_notes_act = newAction("mapnotes", tr("Map notes..."), this, SLOT(mapNotesClicked()), nullptr, QString{}, "map_menu.html");
 	
@@ -1240,10 +1237,9 @@ void MapEditorController::createMenuAndToolbars()
 	QMenu* map_menu = window->menuBar()->addMenu(tr("M&ap"));
 	map_menu->setWhatsThis(Util::makeWhatThis("map_menu.html"));
 	map_menu->addAction(georeferencing_act);
-	map_menu->addAction(align_map_act);
 	map_menu->addAction(configure_grid_act);
 	map_menu->addSeparator();
-	map_menu->addAction(scale_map_act);
+	map_menu->addAction(align_map_act);
 	map_menu->addAction(rotate_map_act);
 	map_menu->addAction(stretch_map_act);
 	map_menu->addAction(shift_map_act);
@@ -2171,13 +2167,6 @@ void MapEditorController::scaleAllSymbolsClicked()
 		return;
 	
 	map->scaleAllSymbols(percent / 100.0);
-}
-
-void MapEditorController::scaleMapClicked()
-{
-	ScaleMapDialog dialog(window, map);
-	dialog.setWindowModality(Qt::WindowModal);
-	dialog.exec();
 }
 
 void MapEditorController::rotateMapClicked()
