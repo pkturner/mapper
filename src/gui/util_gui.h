@@ -314,8 +314,12 @@ namespace Util
 		 * the step width of the spinbox buttons (optional; dependent on
 		 * the number of decimals if not specified),
 		 * the wrapping property of the spinbox (optional).
+		 *
+		 * 'create_optional()' is a variant which adds a "special value"
+		 * with the text "no value", as per the QDoubleSpinBox feature.
 		 */
 		QDoubleSpinBox* create(int decimals, double min, double max, const QString &unit = {}, double step = 0.0);
+		QDoubleSpinBox* create_optional(int decimals, double min, double max, const QString &unit = {}, double step = 0.0);
 		
 		/**
 		 * Creates and initializes a QDoubleSpinBox.
@@ -323,12 +327,24 @@ namespace Util
 		 * This method allows to initialize the most frequent options of
 		 * QDoubleSpinBox in a single call, determining the actual properties
 		 * via InputProperties<T>.
+		 *
+		 * 'create_optional()' is a variant which adds a "special value"
+		 * with the text "no value", as per the QDoubleSpinBox feature.
 		 */
 		template< class T >
 		QDoubleSpinBox* create()
 		{
 			typedef InputProperties<T> P;
 			auto* spinbox = create(P::decimals(), P::min(), P::max(), P::unit(), P::step());
+			if (P::wrapping())
+				spinbox->setWrapping(true);
+			return spinbox;
+		}
+		template< class T >
+		QDoubleSpinBox* create_optional()
+		{
+			typedef InputProperties<T> P;
+			auto* spinbox = create_optional(P::decimals(), P::min(), P::max(), P::unit(), P::step());
 			if (P::wrapping())
 				spinbox->setWrapping(true);
 			return spinbox;

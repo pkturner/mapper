@@ -344,6 +344,45 @@ namespace Util {
 			return box;
 		}
 		
+		QDoubleSpinBox* create_optional(int decimals, double min, double max, const QString &unit, double step)
+		{
+			double special_binary = nexttoward(min, -INFINITY);
+			double special_decimal = min - pow(10.0, -decimals);
+			double special_value = fmin(special_binary, special_decimal);
+
+			auto box = new QDoubleSpinBox();
+			box->setDecimals(decimals);
+			box->setRange(special_value, max);
+			const auto space = QLatin1Char{' '};
+			if (unit.startsWith(space))
+				box->setSuffix(unit);
+			else if (unit.length() > 0)
+				box->setSuffix(space + unit);
+			if (step > 0.0)
+				box->setSingleStep(step);
+			else
+			{
+				switch (decimals)
+				{
+					case 0: 	box->setSingleStep(1.0); break;
+					case 1: 	box->setSingleStep(0.1); break;
+					default: 	box->setSingleStep(5.0 * pow(10.0, -decimals));
+				}
+			}
+			box->setSpecialValueText(QApplication::translate("OpenOrienteering::Util", "no value"));
+	#ifndef NDEBUG
+			if (countDigits(min, box->locale()) > max_digits())
+				qWarning("Util::SpinBox::create() will create "
+				         "a very large widget because of min=%s",
+				         QByteArray::number(min, 'f', decimals).constData());
+			if (countDigits(max, box->locale()) > max_digits())
+				qWarning("Util::SpinBox::create() will create "
+				         "a very large widget because of max=%s",
+				         QByteArray::number(max, 'f', decimals).constData());
+	#endif
+			return box;
+		}
+		
 	}
 		
 	namespace TristateCheckbox
