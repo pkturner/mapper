@@ -242,6 +242,7 @@ private:
 	/* Internal state */
 	bool allow_no_georeferencing;
 	bool declination_query_in_progress;
+	bool lat_lon_are_set;
 	bool control_projected_selected; // not forced by local state
 	
 	/* GUI elements */

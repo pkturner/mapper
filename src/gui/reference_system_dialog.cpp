@@ -82,7 +82,7 @@ ReferenceSystemDialog::ReferenceSystemDialog(
         Map* map,
         const Georeferencing* initial )
  : GeoDialogCommon(parent, controller, map, initial)
- , is_geo(georef->getState() == Georeferencing::Geospatial)
+ , is_geo(georef->hasGeographicRefPoint())
  , ref_points_consistent(true)
  , CRS_edited(false)
  , crs_selector()
@@ -120,8 +120,8 @@ ReferenceSystemDialog::ReferenceSystemDialog(
 	projected_ref_layout->addSpacing(qMax(ref_point_button_width, geographic_datum_label_width));
 	
 	projected_ref_label = new QLabel();
-	lat_edit = Util::SpinBox::create(8, -90.0, +90.0, Util::InputProperties<Util::RotationalDegrees>::unit());
-	lon_edit = Util::SpinBox::create(8, -180.0, +180.0, Util::InputProperties<Util::RotationalDegrees>::unit());
+	lat_edit = Util::SpinBox::create_optional(8, -90.0, +90.0, Util::InputProperties<Util::RotationalDegrees>::unit());
+	lon_edit = Util::SpinBox::create_optional(8, -180.0, +180.0, Util::InputProperties<Util::RotationalDegrees>::unit());
 	lon_edit->setWrapping(true);
 	QWidget *geographic_ref_widget = {};
 	if (!is_geo)
@@ -227,6 +227,11 @@ ReferenceSystemDialog::ReferenceSystemDialog(
 	if (!is_geo)
 		for (auto scale_widget: crs_widget_list)
 			scale_widget->setVisible(false);
+	if (!georef->hasDeclination())
+	{
+		declination_label->setVisible(false);
+		declination_display->setVisible(false);
+	}
 	if (!control_scale_factor)
 		for (auto scale_widget: scale_widget_list)
 			scale_widget->setVisible(false);
@@ -273,7 +278,8 @@ ReferenceSystemDialog::ReferenceSystemDialog(
 	auxiliaryFactorChanged();
 
 	// Ensure no mismatch between geographic and projected reference points.
-	georef->setProjectedRefPoint(georef->getProjectedRefPoint(), Georeferencing::UpdateGeographicParameter);
+	if (georef->hasGeographicRefPoint())
+		georef->setProjectedRefPoint(georef->getProjectedRefPoint(), Georeferencing::UpdateGeographicParameter);
 }
 
 // static method
@@ -364,12 +370,22 @@ void ReferenceSystemDialog::projectionChanged()
 		}
 	}
 	
-	setValueIfChanged(lat_edit, latitude);
-	setValueIfChanged(lon_edit, longitude);
-	ref_points_consistent = true;
+	if (georef->hasGeographicRefPoint())
+	{
+		setValueIfChanged(lat_edit, latitude);
+		setValueIfChanged(lon_edit, longitude);
+		ref_points_consistent = true;
+	}
+	else
+	{
+		setValueIfChanged(lat_edit, lat_edit->minimum());
+		setValueIfChanged(lon_edit, lon_edit->minimum());
+		ref_points_consistent = false;
+	}
 	
+	// Declination is used when recasting CRS.
 	if (crs_selector)
-		crs_selector->setEnabled(true);
+		crs_selector->setEnabled(georef->hasDeclination() && georef->hasGeographicRefPoint());
 
 	QString error = georef->getErrorText();
 	if (error.length() == 0)
@@ -383,7 +399,9 @@ void ReferenceSystemDialog::projectionChanged()
 // slot
 void ReferenceSystemDialog::declinationChanged()
 {
-	QString text = trUtf8("%1 °", "degree value").arg(QLocale().toString(georef->getDeclination(), 'f', Georeferencing::declinationPrecision()));
+	QString text = georef->hasDeclination()
+		? trUtf8("%1 °", "degree value").arg(QLocale().toString(georef->getDeclination(), 'f', Georeferencing::declinationPrecision()))
+		: tr("no value");
 	declination_display->setText(text);
 }
 
@@ -519,7 +537,10 @@ void ReferenceSystemDialog::latLonEdited()
 {
 	double latitude  = lat_edit->value();
 	double longitude = lon_edit->value();
-	ref_points_consistent = georef->setGeographicRefPoint(LatLon(latitude, longitude), Georeferencing::UpdateGeographicParameter, true);
+	if (latitude != lat_edit->minimum() && longitude != lon_edit->minimum())
+		ref_points_consistent = georef->setGeographicRefPoint(LatLon(latitude, longitude), Georeferencing::UpdateGeographicParameter, true);
+	else
+		ref_points_consistent = false;
 	reset_button->setEnabled(true);
 	updateWidgets();
 }

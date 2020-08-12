@@ -131,7 +131,7 @@ MapAlignmentDialog::MapAlignmentDialog(
 	
 	auto map_north_label = Util::Headline::create(tr("Map north"));
 	
-	declination_edit = Util::SpinBox::create<Util::RotationalDegrees>();
+	declination_edit = Util::SpinBox::create_optional<Util::RotationalDegrees>();
 	declination_button = new QPushButton(tr("Lookup..."));
 	auto declination_layout = new QHBoxLayout();
 	declination_layout->addWidget(declination_edit, 1);
@@ -265,7 +265,7 @@ void MapAlignmentDialog::transformationChanged()
 void MapAlignmentDialog::declinationChanged()
 {
 	const QSignalBlocker block(declination_edit);
-	setValueIfChanged(declination_edit, georef->getDeclination());
+	setValueIfChanged(declination_edit, georef->hasDeclination() ? georef->getDeclination() : declination_edit->minimum());
 
 	updateWidgets();
 }

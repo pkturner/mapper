@@ -102,6 +102,7 @@ GeoreferencingDialog::GeoreferencingDialog(
  : GeoDialogCommon(parent, controller, map, initial)
  , allow_no_georeferencing(allow_no_georeferencing)
  , declination_query_in_progress(false)
+ , lat_lon_are_set(false)
  , control_projected_selected(false)
 {
 	setWindowTitle(tr("Map Georeferencing"));
@@ -158,8 +159,8 @@ GeoreferencingDialog::GeoreferencingDialog(
 	projected_ref_layout->addSpacing(qMax(ref_point_button_width, geographic_datum_label_width));
 	
 	projected_ref_label = new QLabel();
-	lat_edit = Util::SpinBox::create(8, -90.0, +90.0, Util::InputProperties<Util::RotationalDegrees>::unit());
-	lon_edit = Util::SpinBox::create(8, -180.0, +180.0, Util::InputProperties<Util::RotationalDegrees>::unit());
+	lat_edit = Util::SpinBox::create_optional(8, -90.0, +90.0, Util::InputProperties<Util::RotationalDegrees>::unit());
+	lon_edit = Util::SpinBox::create_optional(8, -180.0, +180.0, Util::InputProperties<Util::RotationalDegrees>::unit());
 	lon_edit->setWrapping(true);
 	auto geographic_ref_layout = new QHBoxLayout();
 	geographic_ref_layout->addWidget(lat_edit, 1);
@@ -176,7 +177,7 @@ GeoreferencingDialog::GeoreferencingDialog(
 	
 	auto map_north_label = Util::Headline::create(tr("Map north"));
 	
-	declination_edit = Util::SpinBox::create<Util::RotationalDegrees>();
+	declination_edit = Util::SpinBox::create_optional<Util::RotationalDegrees>();
 	declination_button = new QPushButton(tr("Lookup..."));
 	auto declination_layout = new QHBoxLayout();
 	declination_layout->addWidget(declination_edit, 1);
@@ -365,8 +366,19 @@ void GeoreferencingDialog::projectionChanged()
 	LatLon latlon = georef->getGeographicRefPoint();
 	double latitude  = latlon.latitude();
 	double longitude = latlon.longitude();
-	setValueIfChanged(lat_edit, latitude);
-	setValueIfChanged(lon_edit, longitude);
+	if (georef->hasGeographicRefPoint())
+	{
+		setValueIfChanged(lat_edit, latitude);
+		setValueIfChanged(lon_edit, longitude);
+		lat_lon_are_set = true;
+	}
+	else
+	{
+		// Use special "no value" value.
+		setValueIfChanged(lat_edit, lat_edit->minimum());
+		setValueIfChanged(lon_edit, lon_edit->minimum());
+		lat_lon_are_set = false;
+	}
 	QString osm_link =
 	  QString::fromLatin1("http://www.openstreetmap.org/?lat=%1&lon=%2&zoom=18&layers=M").
 	  arg(latitude).arg(longitude);
@@ -391,7 +403,7 @@ void GeoreferencingDialog::projectionChanged()
 void GeoreferencingDialog::declinationChanged()
 {
 	const QSignalBlocker block(declination_edit);
-	setValueIfChanged(declination_edit, georef->getDeclination());
+	setValueIfChanged(declination_edit, georef->hasDeclination() ? georef->getDeclination() : declination_edit->minimum());
 	
 	updateWidgets();
 }
@@ -507,7 +519,7 @@ void GeoreferencingDialog::updateWidgets()
 	northing_edit->setEnabled(projected_aspect_enabled);
 	lat_edit->setEnabled(geographic_aspect_enabled);
 	lon_edit->setEnabled(geographic_aspect_enabled);
-	link_label->setEnabled(geographic_coords_enabled);
+	link_label->setEnabled(georef->hasGeographicRefPoint());
 	
 	
 	declination_edit->setEnabled(geographic_aspect_enabled);
@@ -531,7 +543,8 @@ void GeoreferencingDialog::updateDeclinationButton()
 	*/
 	bool enabled = !declination_query_in_progress
 		&& (lat_edit->isEnabled()
-			|| (georef->getState() == Georeferencing::Geospatial && grivation_edit->isEnabled()));
+			|| (georef->getState() == Georeferencing::Geospatial && grivation_edit->isEnabled()))
+		&& lat_lon_are_set;
 	declination_button->setEnabled(enabled);
 	declination_button->setText(declination_query_in_progress ? tr("Loading...") : tr("Lookup..."));
 }
@@ -618,7 +631,9 @@ void GeoreferencingDialog::latLonEdited()
 {
 	double latitude  = lat_edit->value();
 	double longitude = lon_edit->value();
-	georef->setGeographicRefPoint(LatLon(latitude, longitude), Georeferencing::UpdateGridParameter);
+	lat_lon_are_set = latitude != lat_edit->minimum() && longitude != lon_edit->minimum();
+	if (lat_lon_are_set)
+		georef->setGeographicRefPoint(LatLon(latitude, longitude), Georeferencing::UpdateGridParameter);
 	reset_button->setEnabled(true);
 }
 
@@ -631,7 +646,8 @@ void GeoreferencingDialog::controlAspectChanged()
 
 void GeoreferencingDialog::declinationEdited(double value)
 {
-	georef->setDeclination(value);
+	if (value != declination_edit->minimum())
+		georef->setDeclination(value);
 	reset_button->setEnabled(true);
 }
 
