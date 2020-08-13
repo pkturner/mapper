@@ -1113,11 +1113,11 @@ const QTransform& Georeferencing::projectedToMap() const
 
 
 
-bool Georeferencing::setProjectedCRS(const QString& id, QString spec, std::vector<QString> params)
+bool Georeferencing::setProjectedCRS(const QString& id, QString spec, std::vector<QString> params, UpdateOption update_parameters)
 {
 	// Default return value if no change is necessary
-	bool ok = (getState() == Geospatial || projected_crs_spec.isEmpty());
-	
+	bool ok = (getState() != Local || projected_crs_spec.isEmpty());
+
 	for (const auto& substitution : spec_substitutions)
 	{
 		if (QLatin1String(substitution[0]) == spec)
@@ -1154,8 +1154,49 @@ bool Georeferencing::setProjectedCRS(const QString& id, QString spec, std::vecto
 			else
 				setState(BrokenGeospatial);
 		}
-		if (getState() == Geospatial)
-			updateGridCompensation();
+
+		switch (update_parameters)
+		{
+		case NoUpdate:
+			if (getState() == Geospatial)
+				updateGridCompensation();
+			break;
+		case UpdateGridParameter:
+			{
+				if (getState() == Geospatial)
+					updateGridCompensation();
+				bool proj_ok = false;
+				QPointF new_projected_ref = toProjectedCoords(geographic_ref_point, &proj_ok);
+				if (proj_ok)
+				{
+					projected_ref_point = new_projected_ref;
+					updateGrivation();
+					updateCombinedScaleFactor();
+					updateTransformation();
+				}
+				else
+					ok = false;
+			}
+			break;
+		case UpdateGeographicParameter:
+			{
+				bool proj_ok = false;
+				LatLon new_geo_ref_point = toGeographicCoords(projected_ref_point, &proj_ok);
+				if (proj_ok)
+				{
+					geographic_ref_point = new_geo_ref_point;
+					if (getState() == Geospatial)
+					{
+						updateGridCompensation();
+						setDeclinationAndGrivation(roundDeclination(grivation+convergence), grivation);
+						initAuxiliaryScaleFactor();
+					}
+				}
+				else
+					ok = false;
+			}
+			break;
+		}
 		
 		emit projectionChanged();
 	}

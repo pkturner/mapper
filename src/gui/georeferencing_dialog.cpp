@@ -566,7 +566,10 @@ void GeoreferencingDialog::crsEdited()
 		Q_ASSERT(crs_template);
 		if (spec.isEmpty())
 			spec = QStringLiteral(" ");  // intentionally non-empty: enforce non-local state.
-		georef_copy.setProjectedCRS(crs_template->id(), spec, crs_selector->parameters());
+		georef_copy.setProjectedCRS(crs_template->id(), spec, crs_selector->parameters(),
+									control_geographic_radio->isChecked()
+									? Georeferencing::UpdateGridParameter
+									: Georeferencing::UpdateGeographicParameter);
 		Q_ASSERT(georef_copy.getState() != Georeferencing::Local);
 		if (control_geographic_radio->isChecked())
 			georef_copy.setGeographicRefPoint(georef->getGeographicRefPoint(), Georeferencing::UpdateGridParameter);

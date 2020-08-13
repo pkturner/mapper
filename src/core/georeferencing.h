@@ -427,21 +427,27 @@ public:
 	/**
 	 * Sets the coordinate reference system (CRS) of the projected coordinates.
 	 * 
-	 * This will not touch any of the reference points, the declination, the
-	 * grivation. It is up to the user to decide how to reestablish a valid
+	 * By default, this will not touch any of the reference points, the
+	 * declination, the grivation. Two methods of reestablishing a valid
 	 * configuration of geographic reference point, projected reference point,
-	 * declination and grivation.
+	 * declination and grivation are supported. With the UpdateGridParameter
+	 * option, the projected reference point is made consistent with the
+	 * geographic reference point. With the UpdateGeographicParameter option,
+	 * the geographic reference point is made consistent with the projected
+	 * reference point and declination is updated similarly. However, these
+	 * geographic parameters are not regarded as having been set by the user.
 	 * 
 	 * If the spec is an empty (zero-length) string, the georeferencing will
 	 * be in Local state when this function returns. In all other case, it will
 	 * be either in Geospatial or BrokenGeospatial state.
-	 * 
+	 *
 	 * @param id  an identifier
 	 * @param spec the PROJ specification of the CRS
 	 * @param params parameter values (ignore for empty spec)
+	 * @param update_parameters  which georeferencing parameters to update
 	 * @return true if the specification is valid or empty, false otherwise
 	 */
-	bool setProjectedCRS(const QString& id, QString spec, std::vector< QString > params = std::vector<QString>());
+	bool setProjectedCRS(const QString& id, QString spec, std::vector< QString > params = std::vector<QString>(), UpdateOption update_parameters = NoUpdate);
 	
 	/**
 	 * Calculates the convergence at the reference point.
