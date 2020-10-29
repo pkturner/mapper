@@ -118,7 +118,8 @@ public:
 	/// Georeferencing state
 	enum State
 	{
-		/// Only conversions between map and local projected coordinates are possible.
+		/// Only conversions between map and local projected coordinates are possible,
+		/// because no projected CRS is present.
 		Local,
 		
 		/// Only conversions between map and local projected coordinates are possible,

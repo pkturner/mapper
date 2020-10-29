@@ -625,7 +625,8 @@ void GeoreferencingDialog::updateDeclinationButton()
 		(proj_spec_visible ||
 		 crs_edit->getSelectedCustomItemId() == -1);
 	*/
-	bool enabled = lat_edit->isEnabled() && !declination_query_in_progress;
+	bool enabled = !declination_query_in_progress
+		&& (lat_edit->isEnabled() || georef->getState() == Georeferencing::Geospatial);
 	declination_button->setEnabled(enabled);
 	declination_button->setText(declination_query_in_progress ? tr("Loading...") : tr("Lookup..."));
 }
