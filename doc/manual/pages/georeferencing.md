@@ -18,9 +18,13 @@ edited: 25 January 2020
 
 Georeferencing of a map is the best way for aligning templates (such as base maps or aerial imagery) and GPS tracks. In short, to georeference a map means to establish a known relationship between the paper coordinates of the map and the coordinates of a geographic coordinate reference system. This way, data which is known in a geographic coordinate reference system (such as GPS coordinates) can be transformed to map coordinates and thus displayed on the map, and vice versa the map can be transformed to geographic coordinates and e.g. be displayed on a world map. More information is available on [Wikipedia](https://en.wikipedia.org/wiki/Georeferencing).
 
-Georeferencing properties are set in a dialog which is available from the menu **Map &gt; Georeferencing...**. The dialog is divided in four sections: Map coordinate reference system, Reference point, Map north, and Scale compensation.
+Georeferencing properties are set in a dialog which is available from the menu **Map &gt; Set georeferencing...**. Changes made in this dialog affect the geographic coordinates of map objects. Objects on the map are not affected unless the user answers "Yes" to a follow-up question. The dialog is divided in four sections: Map coordinate reference system, Reference point, Map north, and Scale compensation.
 
 ![Georeferencing dialog](images/georeferencing_dialog.png)
+
+The **Map &gt; Switch reference system...** dialog allows the setting of certain georeferencing parameters, automatically adjusting others to minimize or eliminate any effect on the geographic coordinates of objects. There is no change to the map. Changing the coordinate reference system here compensates by adjusting the projected coordinates and grivation. Changing the reference point here affects all the involved coordinates in tandem. Note that the map declination may change due to being measured at a different reference point.
+
+The **Map &gt; Realign map...** dialog allows the setting of certain georeferencing parameters, while keeping the geographic coordinates of map objects unchanged. It compensates by automatically moving objects on the map. Changing the declination rotates; changing the auxiliary scale factor stretches or shrinks; changing the map reference point shifts map coordinates.
 
 #### Map coordinate reference system
 
@@ -37,7 +41,7 @@ Depending on the selected coordinate reference system more settings may show up.
 
 #### Reference point
 
-Settings in this section define the reference point, which is a point for which coordinates in all of the involved coordinate systems are known. It acts as the anchor between the different coordinate reference systems.
+Settings in this section define the reference point, which is a point for which coordinates in all of the involved coordinate systems are known. It acts as the anchor between the different coordinate systems.
 
 In case the georeferencing dialog is triggered by loading a georeferenced template in a map which is not georeferenced yet, these settings are probably already pre-filled with sensible values (assuming that no other map objects exist yet), so they do not need to be changed in this case.
 

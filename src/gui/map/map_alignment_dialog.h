@@ -19,39 +19,46 @@
  */
 
 
-#ifndef OPENORIENTEERING_GEOREFERENCING_DIALOG_H
-#define OPENORIENTEERING_GEOREFERENCING_DIALOG_H
+#ifndef OPENORIENTEERING_MAP_ALIGNMENT_DIALOG_H
+#define OPENORIENTEERING_MAP_ALIGNMENT_DIALOG_H
 
 #include <vector>
 
+#include <QDialog>
 #include <QObject>
+#include <QScopedPointer>
 #include <QString>
 #include <QTransform>
 
 #include "core/map_coord.h"
 #include "gui/geo_dialog_common.h"
+#include "tools/tool.h"
 
+class QAction;
+class QCursor;
 class QCheckBox;
 class QDialogButtonBox;
 class QDoubleSpinBox;
 class QLabel;
+class QMouseEvent;
 class QPushButton;
+class QRadioButton;
 class QNetworkReply;
 class QWidget;
 
 namespace OpenOrienteering {
 
-class CRSSelector;
 class Georeferencing;
 class Map;
 class MapEditorController;
+class MapWidget;
 
 
 /**
  * A GeoreferencingDialog allows the user to adjust the georeferencing properties
  * of a map.
  */
-class GeoreferencingDialog : public GeoDialogCommon
+class MapAlignmentDialog : public GeoDialogCommon
 {
 Q_OBJECT
 public:
@@ -59,20 +66,16 @@ public:
 	 * Constructs a new georeferencing dialog for the map handled by the given 
 	 * controller. The optional parameter initial allows to override the current 
 	 * properties of the map's georeferencing. The parameter
-	 * allow_no_georeferencing determines if the okay button can
-	 * be clicked while "- none -" is selected.
 	 */
-	GeoreferencingDialog(MapEditorController* controller, const Georeferencing* initial = nullptr, bool allow_no_georeferencing = true);
+	MapAlignmentDialog(MapEditorController* controller, const Georeferencing* initial = nullptr);
 	
 	/**
 	 * Constructs a new georeferencing dialog for the given map. The optional 
 	 * parameter initial allows to override the current properties of the map's
 	 * georeferencing. Since the dialog will not know a MapEditorController,
 	 * it will not allow to select a new reference point from the map.
-	 * The parameter allow_no_georeferencing determines if the okay button can
-	 * be clicked while "- none -" is selected.
 	 */
-	GeoreferencingDialog(QWidget* parent, Map* map, const Georeferencing* initial = nullptr, bool allow_no_georeferencing = true);
+	MapAlignmentDialog(QWidget* parent, Map* map, const Georeferencing* initial = nullptr);
 	
 protected:
 	/**
@@ -85,15 +88,12 @@ protected:
 	 * @param controller              A controller which operates on the map.
 	 * @param map                     The map.
 	 * @param initial                 An override of the map's georeferencing
-	 * @param allow_no_georeferencing Determines if the okay button can be
-	 *                                be clicked while "- none -" is selected.
 	 */
-	GeoreferencingDialog(
+	MapAlignmentDialog(
 	        QWidget* parent,
 	        MapEditorController* controller,
 	        Map* map,
-	        const Georeferencing* initial,
-	        bool allow_no_georeferencing
+	        const Georeferencing* initial
 	);
 	
 public:
@@ -140,16 +140,6 @@ public:
 	bool setMapRefPoint(const MapCoord& coords) override;
 	
 	/**
-	 * Activates the "keep projected reference point coordinates on CRS changes" radio button.
-	 */
-	void setKeepProjectedRefCoords();
-	
-	/**
-	 * Activates the "keep geographic reference point coordinates on CRS changes" radio button.
-	 */
-	void setKeepGeographicRefCoords();
-	
-	/**
 	 * Opens this dialog's help page.
 	 */
 	void showHelp();
@@ -187,40 +177,20 @@ protected:
 	void updateDeclinationButton();
 	
 	
-	/** 
-	 * Notifies the dialog of a change in the CRS configuration.
-	 */
-	void crsEdited();
-	
 	/**
 	 * Notifies the dialog of a change in the auxiliary scale factor.
 	 */
 	void auxiliaryFactorEdited(double value);
 	
 	/**
-	 * Updates the combined scale factor field from the underlying Georeferencing.
+	 * Notifies the dialog of a change in the combined scale factor.
 	 */
-	void updateCombinedFactor();
+	void combinedFactorEdited(double value);
 	
 	/**
 	 * Notifies the dialog of a change in the map reference point fields.
 	 */
 	void mapRefChanged();
-	
-	/**
-	 * Notifies the dialog of a change in the easting / northing fields.
-	 */
-	void eastingNorthingEdited();
-	
-	/**
-	 * Notifies the dialog of change of the keep-coords buttons.
-	 */
-	void keepCoordsChanged();
-	
-	/**
-	 * Notifies the dialog of a change in the latitude / longitude fields.
-	 */
-	void latLonEdited();
 	
 	/** 
 	 * Notifies the dialog of a change in the declination field.
@@ -233,46 +203,27 @@ protected:
 	void declinationReplyFinished(QNetworkReply* reply);
 	
 	/**
-	 * Updates the grivation field from the underlying Georeferencing.
+	 * Notifies the dialog of a change in the grivation field.
 	 */
-	void updateGrivation();
+	void grivationEdited(double value);
 	
 private:
 	/* Internal state */
-	bool allow_no_georeferencing;
 	bool declination_query_in_progress;
-	bool grivation_locked;
-	bool scale_factor_locked;
 	
 	/* GUI elements */
-	CRSSelector* crs_selector;
-	QLabel* status_label;
-	QLabel* status_field;
-	
 	QDoubleSpinBox* map_x_edit;
 	QDoubleSpinBox* map_y_edit;
 	QPushButton* ref_point_button;
 	
-	QLabel* projected_ref_label;
-	QDoubleSpinBox* easting_edit;
-	QDoubleSpinBox* northing_edit;
-	
-	QDoubleSpinBox* lat_edit;
-	QDoubleSpinBox* lon_edit;
-	QLabel* show_refpoint_label;
-	QLabel* link_label;
-	
-	QRadioButton* keep_projected_radio;
-	QRadioButton* keep_geographic_radio;
-	
 	QDoubleSpinBox* declination_edit;
 	QPushButton* declination_button;
-	QLabel* grivation_label;
+	QDoubleSpinBox* grivation_edit;
 
 	QCheckBox* show_scale_check;
 	std::vector<QWidget*> scale_widget_list;
-	QDoubleSpinBox* scale_factor_edit;
-	QLabel* combined_factor_display;
+	QDoubleSpinBox* aux_factor_edit;
+	QDoubleSpinBox* combined_factor_edit;
 	
 	QPushButton* reset_button;
 	QDialogButtonBox* buttons_box;

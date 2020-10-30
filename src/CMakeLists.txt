@@ -137,6 +137,7 @@ set(Mapper_Common_SRCS
   gui/configure_grid_dialog.cpp
   gui/file_dialog.cpp
   gui/georeferencing_dialog.cpp
+  gui/geo_dialog_common.cpp
   gui/home_screen_controller.cpp
   gui/main_window.cpp
   gui/main_window_controller.cpp
@@ -152,6 +153,7 @@ set(Mapper_Common_SRCS
   gui/util_gui.cpp
   
   gui/map/new_map_dialog.cpp
+  gui/map/map_alignment_dialog.cpp
   gui/map/map_dialog_scale.cpp
   gui/map/map_editor.cpp
   gui/map/map_editor_activity.cpp

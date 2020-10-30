@@ -244,10 +244,6 @@ try
 			else
 				keep_projected = preserveRefPoints(*data_georef, initial_georef);
 			GeoreferencingDialog dialog(dialog_parent, map, data_georef.get());
-			if (keep_projected)
-				dialog.setKeepProjectedRefCoords();
-			else
-				dialog.setKeepGeographicRefCoords();
 			dialog.exec();
 		}
 	}

@@ -31,6 +31,7 @@
 #include <QSize>
 #include <QString>
 #include <QStringList>
+#include <QTransform>
 #include <QWidget>
 
 

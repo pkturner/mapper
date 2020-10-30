@@ -120,6 +120,7 @@
 #include "gui/print_widget.h"
 #include "gui/text_browser_dialog.h"
 #include "gui/util_gui.h"
+#include "gui/map/map_alignment_dialog.h"
 #include "gui/map/map_dialog_scale.h"
 #include "gui/map/map_editor_activity.h"
 #include "gui/map/map_find_feature.h"
@@ -462,6 +463,7 @@ void MapEditorController::setEditingInProgress(bool value)
 		
 		// Map menu
 		georeferencing_act->setEnabled(!editing_in_progress);
+		align_map_act->setEnabled(!editing_in_progress);
 		scale_map_act->setEnabled(!editing_in_progress);
 		rotate_map_act->setEnabled(!editing_in_progress);
 		stretch_map_act->setEnabled(!editing_in_progress);
@@ -1012,7 +1014,8 @@ void MapEditorController::createActions()
 	/*QAction* load_colors_from_act = newAction("loadcolors", tr("Load colors from..."), this, SLOT(loadColorsFromClicked()), nullptr, tr("Replace the colors with those from another map file"));*/
 	
 	scale_all_symbols_act = newAction("scaleall", tr("Scale all symbols..."), this, SLOT(scaleAllSymbolsClicked()), nullptr, tr("Scale the whole symbol set"), "map_menu.html");
-	georeferencing_act = newAction("georef", tr("Georeferencing..."), this, SLOT(editGeoreferencing()), nullptr, QString{}, "georeferencing.html");
+	georeferencing_act = newAction("georef", tr("Set georeferencing..."), this, SLOT(editGeoreferencing()), nullptr, QString{}, "georeferencing.html");
+	align_map_act = newAction("alignmap", tr("Realign map..."), this, SLOT(editAlignment()), nullptr, QString{}, "georeferencing.html");
 	scale_map_act = newAction("scalemap", tr("Change map scale..."), this, SLOT(scaleMapClicked()), "tool-scale.png", tr("Change the map scale and adjust map objects and symbol sizes"), "map_menu.html");
 	rotate_map_act = newAction("rotatemap", tr("Rotate all objects..."), this, SLOT(rotateMapClicked()), "tool-rotate.png", tr("Rotate the whole map"), "map_menu.html");
 	stretch_map_act = newAction("stretchmap", tr("Scale all objects..."), this, SLOT(stretchMapClicked()), nullptr, tr("Scale the whole map"), "map_menu.html");
@@ -1237,6 +1240,7 @@ void MapEditorController::createMenuAndToolbars()
 	QMenu* map_menu = window->menuBar()->addMenu(tr("M&ap"));
 	map_menu->setWhatsThis(Util::makeWhatThis("map_menu.html"));
 	map_menu->addAction(georeferencing_act);
+	map_menu->addAction(align_map_act);
 	map_menu->addAction(configure_grid_act);
 	map_menu->addSeparator();
 	map_menu->addAction(scale_map_act);
@@ -2344,6 +2348,36 @@ void MapEditorController::editGeoreferencing()
 void MapEditorController::georeferencingDialogFinished()
 {
 	georeferencing_dialog.take()->deleteLater();
+	map->updateAllMapWidgets();
+	
+	bool gps_display_possible = map->getGeoreferencing().getState() == Georeferencing::Geospatial;
+	if (!gps_display_possible)
+	{
+		gps_display_action->setChecked(false);
+		if (gps_display)
+			enableGPSDisplay(false);
+	}
+	gps_display_action->setEnabled(gps_display_possible);
+}
+
+void MapEditorController::editAlignment()
+{
+	if (map_alignment_dialog.isNull())
+	{
+		auto* dialog = new MapAlignmentDialog(this); 
+		map_alignment_dialog.reset(dialog);
+		connect(dialog, &QDialog::finished, this, &MapEditorController::mapAlignmentDialogFinished);
+		if (map_widget)
+			connect(dialog, &MapAlignmentDialog::mapObjectsShifted, map_widget, &MapWidget::shiftViewCenter);
+		if (print_widget)
+			connect(dialog, &MapAlignmentDialog::mapObjectsShifted, print_widget, &PrintWidget::shiftPrintArea);
+	}
+	map_alignment_dialog->exec();
+}
+
+void MapEditorController::mapAlignmentDialogFinished()
+{
+	map_alignment_dialog.take()->deleteLater();
 	map->updateAllMapWidgets();
 	
 	bool gps_display_possible = map->getGeoreferencing().getState() == Georeferencing::Geospatial;

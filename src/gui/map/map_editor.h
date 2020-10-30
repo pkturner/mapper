@@ -62,6 +62,7 @@ class GPSTrackRecorder;
 class GeoreferencingDialog;
 class MainWindow;
 class MapCoordF;
+class MapAlignmentDialog;
 class MapEditorActivity;
 class MapEditorTool;
 class MapFindFeature;
@@ -356,6 +357,8 @@ public slots:
 	
 	/** Shows the GeoreferencingDialog. */
 	void editGeoreferencing();
+	/** Shows the MapAlignmentDialog. */
+	void editAlignment();
 	
 	/**
 	 * Makes the editor aware of a change of the selected symbols.
@@ -632,6 +635,7 @@ protected:
 protected slots:
 	void projectionChanged();
 	void georeferencingDialogFinished();
+	void mapAlignmentDialogFinished();
 	
 	/**
 	 * Sets the map's current part.
@@ -732,6 +736,7 @@ private:
 	
 	QAction* scale_all_symbols_act;
 	QAction* georeferencing_act;
+	QAction* align_map_act;
 	QAction* scale_map_act;
 	QAction* rotate_map_act;
 	QAction* stretch_map_act;
@@ -839,6 +844,7 @@ private:
 	QPointer<QComboBox> mappart_selector_box;
 	
 	QScopedPointer<GeoreferencingDialog> georeferencing_dialog;
+	QScopedPointer<MapAlignmentDialog> map_alignment_dialog;
 	QScopedPointer<ReopenTemplateDialog> reopen_template_dialog;
 	
 	QSignalMapper* mappart_merge_mapper;

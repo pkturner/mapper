@@ -21,17 +21,15 @@
 
 #include "georeferencing_dialog.h"
 
-#include <cmath>
-#include <functional>
 #include <vector>
 
 #include <Qt>
 #include <QtGlobal>
 #include <QAbstractButton>
 #include <QCheckBox>
-#include <QCursor>
 #include <QDate>
 #include <QDesktopServices>  // IWYU pragma: keep
+#include <QDialog>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QFlags>
@@ -42,16 +40,14 @@
 #include <QLatin1String>
 #include <QLocale>
 #include <QMessageBox>
-#include <QMouseEvent>
-#include <QPixmap>
 #include <QPointF>
 #include <QPushButton>
 #include <QRadioButton>
+#include <QScopedPointer>
 #include <QSignalBlocker>
 #include <QSize>
 #include <QSpacerItem>
 #include <QStringRef>
-#include <QTimer>
 #include <QUrl>
 #include <QUrlQuery>
 #include <QVariant>
@@ -70,36 +66,17 @@
 #include "core/crs_template.h"
 #include "core/georeferencing.h"
 #include "core/latlon.h"
-#include "core/map.h"
-#include "core/map_printer.h"
 #include "gui/main_window.h"
 #include "gui/map/map_editor.h"
-#include "gui/map/rotate_map_dialog.h"
-#include "gui/map/stretch_map_dialog.h"
 #include "gui/widgets/crs_selector.h"
 #include "gui/util_gui.h"
 #include "util/backports.h"  // IWYU pragma: keep
 #include "util/scoped_signals_blocker.h"
 
 
-#ifdef __clang_analyzer__
-#define singleShot(A, B, C) singleShot(A, B, #C) // NOLINT 
-#endif
-
-
 namespace OpenOrienteering {
 
 Q_STATIC_ASSERT(Georeferencing::declinationPrecision() == Util::InputProperties<Util::RotationalDegrees>::decimals());
-
-
-namespace  {
-
-void setValueIfChanged(QDoubleSpinBox* field, qreal value) {
-	if (!qFuzzyCompare(field->value(), value))
-		field->setValue(value);
-}
-
-}  // namespace
 
 
 
@@ -123,13 +100,8 @@ GeoreferencingDialog::GeoreferencingDialog(
         Map* map,
         const Georeferencing* initial,
         bool allow_no_georeferencing )
- : QDialog(parent, Qt::WindowSystemMenuHint | Qt::WindowTitleHint)
- , controller(controller)
- , map(map)
- , initial_georef(initial ? initial : &map->getGeoreferencing())
- , georef(new Georeferencing(*initial_georef))
+ : GeoDialogCommon(parent, controller, map, initial)
  , allow_no_georeferencing(allow_no_georeferencing)
- , tool_active(false)
  , declination_query_in_progress(false)
  , grivation_locked(initial_georef->getState() != Georeferencing::Geospatial)
  , scale_factor_locked(grivation_locked)
@@ -241,7 +213,7 @@ GeoreferencingDialog::GeoreferencingDialog(
 	auto help_button = buttons_box->button(QDialogButtonBox::Help);
 	
 	auto edit_layout = new QFormLayout();
-	
+
 	edit_layout->addRow(map_crs_label);
 	edit_layout->addRow(tr("&Coordinate reference system:"), crs_selector);
 	crs_selector->setDialogLayout(edit_layout);
@@ -290,7 +262,7 @@ GeoreferencingDialog::GeoreferencingDialog(
 	
 	connect(map_x_edit, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &GeoreferencingDialog::mapRefChanged);
 	connect(map_y_edit, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &GeoreferencingDialog::mapRefChanged);
-	connect(ref_point_button, &QPushButton::clicked, this, &GeoreferencingDialog::selectMapRefPoint);
+	connect(ref_point_button, &QPushButton::clicked, this, &GeoDialogCommon::selectMapRefPoint);
 	
 	connect(easting_edit, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &GeoreferencingDialog::eastingNorthingEdited);
 	connect(northing_edit, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &GeoreferencingDialog::eastingNorthingEdited);
@@ -317,12 +289,6 @@ GeoreferencingDialog::GeoreferencingDialog(
 	georefStateChanged();
 	declinationChanged();
 	auxiliaryFactorChanged();
-}
-
-GeoreferencingDialog::~GeoreferencingDialog()
-{
-	if (tool_active)
-		controller->setOverrideTool(nullptr);
 }
 
 // slot
@@ -477,10 +443,11 @@ void GeoreferencingDialog::requestDeclination(bool no_confirm)
 #endif
 }
 
-void GeoreferencingDialog::setMapRefPoint(const MapCoord& coords)
+bool GeoreferencingDialog::setMapRefPoint(const MapCoord& coords)
 {
 	georef->setMapRefPoint(coords);
 	reset_button->setEnabled(true);
+	return true;
 }
 
 void GeoreferencingDialog::setKeepProjectedRefCoords()
@@ -493,11 +460,6 @@ void GeoreferencingDialog::setKeepGeographicRefCoords()
 {
 	keep_geographic_radio->setChecked(true);
 	reset_button->setEnabled(true);
-}
-
-void GeoreferencingDialog::toolDeleted()
-{
-	tool_active = false;
 }
 
 void GeoreferencingDialog::showHelp()
@@ -514,86 +476,17 @@ void GeoreferencingDialog::reset()
 
 void GeoreferencingDialog::accept()
 {
-	auto const declination_change_degrees = georef->getDeclination() - initial_georef->getDeclination();
-	auto const scale_factor_change = georef->getAuxiliaryScaleFactor() / initial_georef->getAuxiliaryScaleFactor();
-	auto rotate = RotateMapDialog::RotationOp {};
-	auto stretch = StretchMapDialog::StretchOp {};
-	
 	if (grivation_locked)
 	{
 		georef->updateGrivation();
 	}
-	else if (!qIsNull(declination_change_degrees)
-	         && (map->getNumObjects() > 0 || map->getNumTemplates() > 0))
-	{
-		int result = QMessageBox::question(this, tr("Declination change"), tr("The declination has been changed. Do you want to rotate the map content accordingly, too?"), QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
-		if (result == QMessageBox::Cancel)
-			return;
-		
-		if (result == QMessageBox::Yes)
-		{
-			RotateMapDialog dialog(*map, this);
-			dialog.setWindowModality(Qt::WindowModal);
-			dialog.setRotationDegrees(declination_change_degrees);
-			dialog.setRotateAroundGeorefRefPoint();
-			dialog.setAdjustDeclination(false);
-			dialog.showAdjustDeclination(false);
-			if (dialog.exec() == QDialog::Rejected)
-				return;
-			rotate = dialog.makeRotation();
-		}
-	}
-	
 	if (scale_factor_locked)
 	{
 		georef->updateCombinedScaleFactor();
 	}
-	else if (!qIsNull(std::log(scale_factor_change))
-	         && (map->getNumObjects() > 0 || map->getNumTemplates() > 0))
-	{
-		int result = QMessageBox::question(this, tr("Scale factor change"), tr("The scale factor has been changed. Do you want to stretch/shrink the map content accordingly, too?"), QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
-		if (result == QMessageBox::Cancel)
-			return;
-		
-		if (result == QMessageBox::Yes)
-		{
-			// Note: This revision of GeoreferencingDialog coexists with a version of
-			// StretchMapDialog which does not support a pre-set value for the
-			// stretch_factor. It will not work automatically, which would be a bug,
-			// except that this code path is obsolete and will be removed.
-			// StretchMapDialog dialog(*map, 1.0/scale_factor_change, this);
-			StretchMapDialog dialog(*map, this);
-			dialog.setWindowModality(Qt::WindowModal);
-			if (dialog.exec() == QDialog::Rejected)
-				return;
-			stretch = dialog.makeStretch();
-		}
-	}
+	// Update of geographic locations (of any objects) is implicit.
 	
-	if (rotate || stretch)
-	{
-		if (georef->getState() == Georeferencing::Local && map->getGeoreferencing().getState() != Georeferencing::Local)
-		{
-			// When switching the map to a local georeferencing, templates may
-			// switch to a non-georeferenced mode. Rotating and stretching
-			// must be applied to the mode-changing templates, too. So we add
-			// an intermediate step: switching to a local georeferencing with the same
-			// scale factors and rotation as before.
-			auto const& map_georef = map->getGeoreferencing();
-			Georeferencing local_georef { map_georef };
-			local_georef.setLocalState();
-			local_georef.setDeclination(map_georef.getDeclination());
-			local_georef.setAuxiliaryScaleFactor(map_georef.getAuxiliaryScaleFactor());
-			map->setGeoreferencing(local_georef);
-		}
-		if (rotate)
-			rotate(*map);
-		if (stretch)
-			stretch(*map);
-	}
-	
-	map->setGeoreferencing(*georef);
-	QDialog::accept();
+	GeoDialogCommon::accept();
 }
 
 void GeoreferencingDialog::updateWidgets()
@@ -706,16 +599,6 @@ void GeoreferencingDialog::auxiliaryFactorEdited(double value)
 	}
 	georef->setAuxiliaryScaleFactor(value);
 	reset_button->setEnabled(true);
-}
-
-void GeoreferencingDialog::selectMapRefPoint()
-{
-	if (controller)
-	{
-		controller->setOverrideTool(new GeoreferencingTool(this, controller));
-		tool_active = true;
-		hide();
-	}
 }
 
 void GeoreferencingDialog::mapRefChanged()
@@ -849,69 +732,6 @@ void GeoreferencingDialog::declinationReplyFinished(QNetworkReply* reply)
 #else
 	Q_UNUSED(reply)
 #endif
-}
-
-
-
-// ### GeoreferencingTool ###
-
-GeoreferencingTool::GeoreferencingTool(GeoreferencingDialog* dialog, MapEditorController* controller, QAction* action)
- : MapEditorTool(controller, Other, action)
- , dialog(dialog)
-{
-	// nothing
-}
-
-GeoreferencingTool::~GeoreferencingTool()
-{
-	dialog->toolDeleted();
-}
-
-void GeoreferencingTool::init()
-{
-	setStatusBarText(tr("<b>Click</b>: Set the reference point. <b>Right click</b>: Cancel."));
-	MapEditorTool::init();
-}
-
-bool GeoreferencingTool::mousePressEvent(QMouseEvent* event, const MapCoordF& /*map_coord*/, MapWidget* /*widget*/)
-{
-	bool handled = false;
-	switch (event->button())
-	{
-	case Qt::LeftButton:
-	case Qt::RightButton:
-		handled = true;
-		break;
-	default:
-		; // nothing
-	}
-
-	return handled;
-}
-
-bool GeoreferencingTool::mouseReleaseEvent(QMouseEvent* event, const MapCoordF& map_coord, MapWidget* /*widget*/)
-{
-	bool handled = false;
-	switch (event->button())
-	{
-	case Qt::LeftButton:
-		dialog->setMapRefPoint(MapCoord(map_coord));
-		Q_FALLTHROUGH();
-	case Qt::RightButton:
-		QTimer::singleShot(0, dialog, &QDialog::exec);
-		handled = true;
-		break;
-	default:
-		; // nothing
-	}
-	
-	return handled;
-}
-
-const QCursor& GeoreferencingTool::getCursor() const
-{
-	static auto const cursor = scaledToScreen(QCursor{ QPixmap{ QString::fromLatin1(":/images/cursor-crosshair.png") }, 11, 11 });
-	return cursor;
 }
 
 

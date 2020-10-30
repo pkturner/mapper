@@ -615,13 +615,15 @@ signals:
 	
 	/**
 	 * Indicates a change to the transformation rules between map coordinates
-	 * and projected coordinates.
+	 * and projected coordinates, or possibly a change
+	 * to the projected reference point independent of the transformation.
 	 */
 	void transformationChanged();
 	
 	/**
 	 * Indicates a change to the projection rules between geographic coordinates
-	 * and projected coordinates.
+	 * and projected coordinates, or possibly a change
+	 * to the geographic reference point independent of the projection.
 	 */
 	void projectionChanged();
 	

@@ -37,6 +37,7 @@
 #include <QSize>
 #include <QString>
 #include <QTime>
+#include <QTransform>
 #include <QVariant>
 #include <QWidget>
 
