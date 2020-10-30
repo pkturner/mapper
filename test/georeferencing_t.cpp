@@ -183,6 +183,7 @@ void GeoreferencingTest::testGridScaleFactor()
 	
 	auto const latlon = LatLon{lat, lon};
 	georef.setGeographicRefPoint(latlon);
+	georef.setDeclination(0);
 	QCOMPARE(georef.getState(), Georeferencing::Geospatial);
 	
 	// Verify scale_x
@@ -372,6 +373,8 @@ void GeoreferencingTest::testCRSTemplates()
 	
 	Georeferencing georef;
 	georef.setProjectedCRS(QStringLiteral("EPSG"), epsg_template->specificationTemplate().arg(QStringLiteral("5514")), { QStringLiteral("5514") });
+	georef.setProjectedRefPoint(QPointF{0,0});
+	georef.setDeclination(0);
 	QCOMPARE(georef.getState(), Georeferencing::Geospatial);
 	QCOMPARE(georef.getProjectedCoordinatesName(), QStringLiteral("EPSG 5514 coordinates"));
 }

@@ -226,6 +226,16 @@ public:
 	
 	
 	/**
+	 * Returns if the georeferencing settings are valid for the current state.
+	 * 
+	 * This means that coordinates can be converted between map and projected
+	 * coordinates. When state is not Local, the geographic reference point
+	 * and declination are available, and a conversion to
+	 * geographic coordinates is possible.
+	 */
+	bool isValid() const;
+	
+	/**
 	 * Returns true if the "projected CRS" is actually geographic.
 	 * 
 	 * \see proj_angular_output(PJ *, enum PJ_DIRECTION) in PROJ
@@ -314,6 +324,11 @@ public:
 	 * @see setDeclination()
 	 */
 	double getDeclination() const;
+	
+	/**
+	 * Returns whether declination is provided.
+	 */
+	bool hasDeclination() const;
 	
 	/**
 	 * Sets the magnetic declination (in degrees).
@@ -466,6 +481,11 @@ public:
 	LatLon getGeographicRefPoint() const;
 	
 	/**
+	 * Returns whether the reference point has geographic coordinates.
+	 */
+	bool hasGeographicRefPoint() const;
+	
+	/**
 	 * Defines the geographic coordinates of the reference point.
 	 * 
 	 * This may trigger changes of the projected coordinates of the reference
@@ -474,6 +494,12 @@ public:
 	 */
 	bool setGeographicRefPoint(LatLon lat_lon, UpdateOption update_parameters = UpdateGridParameter,
 											   bool keep_georeferencing = false);
+	
+	/**
+	 * Clears the geographic parameters geographic reference point,
+	 * declination, and auxiliary scale factor.
+	 */
+	void clearGeographicParameters();
 	
 	
 	/** 
@@ -655,7 +681,7 @@ signals:
 	
 private:
 	void setScaleFactors(double combined_scale_factor, double auxiliary_scale_factor);
-	void setDeclinationAndGrivation(double declination, double grivation);
+	void setDeclinationAndGrivation(double declination, double grivation, bool set_has_declination);
 	
 	State state;
 	
@@ -672,6 +698,11 @@ private:
 	 */
 	double grid_scale_factor;
 
+	/**
+	 * This indicates that the user has either set the declination directly, or
+	 * in the context of a  good CRS and geographic reference point, set the grivation.
+	 */
+	bool has_declination;
 	double declination;
 	double grivation;
 	double grivation_error;
@@ -700,6 +731,12 @@ private:
 	
 	ProjTransform proj_transform;
 	
+	/**
+	 * This indicates that the user has either set the geographic reference
+	 * point directly, or in the context of a good CRS set the map or projected
+	 * reference point.
+	 */
+	bool has_geographic_ref_point;
 	LatLon geographic_ref_point;
 	
 };
@@ -743,6 +780,13 @@ double Georeferencing::roundDeclination(double value)
 }
 
 inline
+bool Georeferencing::isValid() const
+{
+	return state == Local
+		|| (state == Geospatial && has_geographic_ref_point && has_declination);
+}
+
+inline
 unsigned int Georeferencing::getScaleDenominator() const
 {
 	return scale_denominator;
@@ -764,6 +808,12 @@ inline
 double Georeferencing::getDeclination() const
 {
 	return declination;
+}
+
+inline
+bool Georeferencing::hasDeclination() const
+{
+	return has_declination;
 }
 
 inline
@@ -806,6 +856,12 @@ inline
 LatLon Georeferencing::getGeographicRefPoint() const
 {
 	return geographic_ref_point;
+}
+
+inline
+bool Georeferencing::hasGeographicRefPoint() const
+{
+	return has_geographic_ref_point;
 }
 
 

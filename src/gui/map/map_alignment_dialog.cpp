@@ -398,16 +398,17 @@ void MapAlignmentDialog::updateWidgets()
 {
 	ref_point_button->setEnabled(controller);
 	
-	declination_edit->setEnabled(georef->getState() == Georeferencing::Geospatial);
+	declination_edit->setEnabled(georef->getState() == Georeferencing::Geospatial && georef->hasGeographicRefPoint());
 	updateDeclinationButton();
-	aux_factor_edit->setEnabled(georef->getState() == Georeferencing::Geospatial);
+	aux_factor_edit->setEnabled(georef->getState() == Georeferencing::Geospatial && georef->hasGeographicRefPoint());
 	
-	buttons_box->button(QDialogButtonBox::Ok)->setEnabled(georef->getState() != Georeferencing::BrokenGeospatial);
+	buttons_box->button(QDialogButtonBox::Ok)->setEnabled(georef->isValid());
 }
 
 void MapAlignmentDialog::updateDeclinationButton()
 {
 	bool enabled = georef->getState() == Georeferencing::Geospatial
+		&& georef->hasGeographicRefPoint()
 		&& !declination_query_in_progress;
 	declination_button->setEnabled(enabled);
 	declination_button->setText(declination_query_in_progress ? tr("Loading...") : tr("Lookup..."));

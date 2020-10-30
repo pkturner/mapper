@@ -279,7 +279,7 @@ ReferenceSystemDialog::ReferenceSystemDialog(
 // static method
 bool ReferenceSystemDialog::suitable(const Georeferencing &georef)
 {
-	return georef.getState() == Georeferencing::Geospatial;
+	return georef.hasGeographicRefPoint() && (georef.getState() == Georeferencing::Geospatial || georef.hasDeclination());
 }
 
 // slot
@@ -288,7 +288,7 @@ void ReferenceSystemDialog::georefStateChanged()
 	if (georef->getState() == Georeferencing::Local)
 		crs_selector->setCurrentItem(Georeferencing::Local);
 
-	bool enable = georef->getState() == Georeferencing::Geospatial;
+	bool enable = georef->getState() == Georeferencing::Geospatial && georef->hasGeographicRefPoint();
 	for (auto ref_point_widget: ref_point_widget_list)
 		ref_point_widget->setEnabled(enable);
 
@@ -489,7 +489,7 @@ void ReferenceSystemDialog::updateWidgets()
 	else
 		projected_ref_label->setText(tr("Local coordinates") + QLatin1Char(':'));
 	
-	buttons_box->button(QDialogButtonBox::Ok)->setEnabled(georef->getState() != Georeferencing::BrokenGeospatial && ref_points_consistent);
+	buttons_box->button(QDialogButtonBox::Ok)->setEnabled(georef->isValid() && ref_points_consistent);
 }
 
 bool ReferenceSystemDialog::setMapRefPoint(const MapCoord& coords)

@@ -383,6 +383,8 @@ void GeoreferencingDialog::projectionChanged()
 		status_field->setText(tr("valid"));
 	else
 		status_field->setText(QLatin1String("<b style=\"color:red\">") + error + QLatin1String("</b>"));
+
+	updateWidgets();
 }
 
 // slot
@@ -390,6 +392,8 @@ void GeoreferencingDialog::declinationChanged()
 {
 	const QSignalBlocker block(declination_edit);
 	setValueIfChanged(declination_edit, georef->getDeclination());
+	
+	updateWidgets();
 }
 
 // slot
@@ -512,7 +516,7 @@ void GeoreferencingDialog::updateWidgets()
 	aux_factor_edit->setEnabled(geographic_aspect_enabled);
 	combined_factor_edit->setEnabled(projected_aspect_enabled);
 	
-	buttons_box->button(QDialogButtonBox::Ok)->setEnabled(georef->getState() != Georeferencing::BrokenGeospatial);
+	buttons_box->button(QDialogButtonBox::Ok)->setEnabled(georef->isValid());
 }
 
 void GeoreferencingDialog::updateDeclinationButton()

@@ -453,12 +453,14 @@ Georeferencing::Georeferencing()
   combined_scale_factor{1.0},
   auxiliary_scale_factor{1.0},
   grid_scale_factor{1.0},
+  has_declination(false),
   declination(0.0),
   grivation(0.0),
   grivation_error(0.0),
   convergence(0.0),
   map_ref_point(0, 0),
-  projected_ref_point(0, 0)
+  projected_ref_point(0, 0),
+  has_geographic_ref_point(false)
 {
 	static ProjSetup run_once;
 	
@@ -474,6 +476,7 @@ Georeferencing::Georeferencing(const Georeferencing& other)
   combined_scale_factor{other.combined_scale_factor},
   auxiliary_scale_factor{other.auxiliary_scale_factor},
   grid_scale_factor(other.grid_scale_factor),
+  has_declination(other.has_declination),
   declination(other.declination),
   grivation(other.grivation),
   grivation_error(other.grivation_error),
@@ -484,6 +487,7 @@ Georeferencing::Georeferencing(const Georeferencing& other)
   projected_crs_spec(other.projected_crs_spec),
   projected_crs_parameters(other.projected_crs_parameters),
   proj_transform(projected_crs_spec),
+  has_geographic_ref_point(other.has_geographic_ref_point),
   geographic_ref_point(other.geographic_ref_point)
 {
 	updateTransformation();
@@ -501,6 +505,7 @@ Georeferencing& Georeferencing::operator=(const Georeferencing& other)
 	combined_scale_factor    = other.combined_scale_factor;
 	auxiliary_scale_factor   = other.auxiliary_scale_factor;
 	grid_scale_factor        = other.grid_scale_factor;
+	has_declination          = other.has_declination;
 	declination              = other.declination;
 	grivation                = other.grivation;
 	grivation_error          = other.grivation_error;
@@ -514,6 +519,7 @@ Georeferencing& Georeferencing::operator=(const Georeferencing& other)
 	projected_crs_spec       = other.projected_crs_spec;
 	projected_crs_parameters = other.projected_crs_parameters;
 	proj_transform           = ProjTransform(other.projected_crs_spec);
+	has_geographic_ref_point = other.has_geographic_ref_point;
 	geographic_ref_point     = other.geographic_ref_point;
 	
 	emit stateChanged();
@@ -562,6 +568,8 @@ void Georeferencing::load(QXmlStreamReader& xml, bool load_scale_only)
 	}
 	else
 	{
+		has_declination = false;
+		has_geographic_ref_point = false;
 		if (georef_element.hasAttribute(literal::auxiliary_scale_factor))
 		{
 			auxiliary_scale_factor = roundScaleFactor(georef_element.attribute<double>(literal::auxiliary_scale_factor));
@@ -571,7 +579,10 @@ void Georeferencing::load(QXmlStreamReader& xml, bool load_scale_only)
 		grid_scale_factor = combined_scale_factor / auxiliary_scale_factor;
 		
 		if (georef_element.hasAttribute(literal::declination))
+		{
 			declination = roundDeclination(georef_element.attribute<double>(literal::declination));
+			has_declination = true;
+		}
 		if (georef_element.hasAttribute(literal::grivation))
 		{
 			grivation = roundDeclination(georef_element.attribute<double>(literal::grivation));
@@ -632,6 +643,8 @@ void Georeferencing::load(QXmlStreamReader& xml, bool load_scale_only)
 					}
 					else if (xml.name() == literal::ref_point)
 					{
+						has_geographic_ref_point = true;
+
 						// Legacy, latitude/longitude in radiant
 						double latitude  = current_element.attribute<double>(literal::lat);
 						double longitude = current_element.attribute<double>(literal::lon);
@@ -639,6 +652,8 @@ void Georeferencing::load(QXmlStreamReader& xml, bool load_scale_only)
 					}
 					else if (xml.name() == literal::ref_point_deg)
 					{
+						has_geographic_ref_point = true;
+
 						// Legacy, latitude/longitude in degrees
 						double latitude  = current_element.attribute<double>(literal::lat);
 						double longitude = current_element.attribute<double>(literal::lon);
@@ -688,7 +703,7 @@ void Georeferencing::save(QXmlStreamWriter& xml) const
 			georef_element.writeAttribute(literal::grid_scale_factor, combined_scale_factor, scaleFactorPrecision());
 		georef_element.writeAttribute(literal::auxiliary_scale_factor, auxiliary_scale_factor, scaleFactorPrecision());
 	}
-	if (!qIsNull(declination))
+	if (!qIsNull(declination) || has_declination)
 		georef_element.writeAttribute(literal::declination, declination, declinationPrecision());
 	if (!qIsNull(grivation))
 		georef_element.writeAttribute(literal::grivation, grivation, declinationPrecision());
@@ -730,7 +745,7 @@ void Georeferencing::save(QXmlStreamWriter& xml) const
 		}
 	}
 	
-	if (getState() == Geospatial)
+	if (getState() == Geospatial || has_geographic_ref_point)
 	{
 		XmlElementWriter crs_element(xml, literal::geographic_crs);
 		crs_element.writeAttribute(literal::id, literal::geographic_coordinates);
@@ -739,17 +754,20 @@ void Georeferencing::save(QXmlStreamWriter& xml) const
 			spec_element.writeAttribute(literal::language, literal::proj_4);
 			xml.writeCharacters(geographic_crs_spec);
 		}
-		if (XMLFileFormat::active_version < 6)
+		if (has_geographic_ref_point)
 		{
-			// Legacy compatibility
-			XmlElementWriter ref_point_element(xml, literal::ref_point);
-			ref_point_element.writeAttribute(literal::lat, degToRad(geographic_ref_point.latitude()), 10);
-			ref_point_element.writeAttribute(literal::lon, degToRad(geographic_ref_point.longitude()), 10);
-		}
-		{
-			XmlElementWriter ref_point_element(xml, literal::ref_point_deg);
-			ref_point_element.writeAttribute(literal::lat, geographic_ref_point.latitude(), 8);
-			ref_point_element.writeAttribute(literal::lon, geographic_ref_point.longitude(), 8);
+			if (XMLFileFormat::active_version < 6)
+			{
+				// Legacy compatibility
+				XmlElementWriter ref_point_element(xml, literal::ref_point);
+				ref_point_element.writeAttribute(literal::lat, degToRad(geographic_ref_point.latitude()), 10);
+				ref_point_element.writeAttribute(literal::lon, degToRad(geographic_ref_point.longitude()), 10);
+			}
+			{
+				XmlElementWriter ref_point_element(xml, literal::ref_point_deg);
+				ref_point_element.writeAttribute(literal::lat, geographic_ref_point.latitude(), 8);
+				ref_point_element.writeAttribute(literal::lon, geographic_ref_point.longitude(), 8);
+			}
 		}
 	}
 }
@@ -816,19 +834,19 @@ void Georeferencing::setDeclination(double value)
 {
 	double declination = roundDeclination(value);
 	double grivation = roundDeclination(value - convergence);
-	setDeclinationAndGrivation(declination, grivation);
+	setDeclinationAndGrivation(declination, grivation, true);
 }
 
 void Georeferencing::setGrivation(double value)
 {
 	double grivation = roundDeclination(value);
 	double declination = roundDeclination(value + convergence);
-	setDeclinationAndGrivation(declination, grivation);
+	setDeclinationAndGrivation(declination, grivation, getState() == Geospatial);
 }
 
-void Georeferencing::setDeclinationAndGrivation(double declination, double grivation)
+void Georeferencing::setDeclinationAndGrivation(double declination, double grivation, bool set_has_declination)
 {
-	bool declination_change = declination != this->declination;
+	bool declination_change = declination != this->declination || (set_has_declination && !has_declination);
 	bool grivation_change = grivation != this->grivation;
 	if (declination_change || grivation_change)
 	{
@@ -838,6 +856,8 @@ void Georeferencing::setDeclinationAndGrivation(double declination, double griva
 		if (grivation_change)
 			updateTransformation();
 		
+		if (set_has_declination)
+			has_declination = true;
 		if (declination_change)
 			emit declinationChanged();
 	}
@@ -845,7 +865,7 @@ void Georeferencing::setDeclinationAndGrivation(double declination, double griva
 
 bool Georeferencing::setMapRefPoint(const MapCoord& point, bool keep_georeferencing)
 {
-	if (map_ref_point != point)
+	if (map_ref_point != point || keep_georeferencing)
 	{
 		map_ref_point = point;
 		if (!keep_georeferencing)
@@ -854,26 +874,25 @@ bool Georeferencing::setMapRefPoint(const MapCoord& point, bool keep_georeferenc
 		}
 		else
 		{
-			const QPointF new_projected_ref_point = toProjectedCoords(point);
+			const QPointF old_projected_ref_point = projected_ref_point;
+			projected_ref_point = toProjectedCoords(point);
 			bool ok = true;
-			if (projected_ref_point != new_projected_ref_point)
+			if (getState() != Local)
 			{
-				projected_ref_point = new_projected_ref_point;
-				if (getState() != Local)
+				ok = false;
+				LatLon new_geo_ref_point = toGeographicCoords(projected_ref_point, &ok);
+				if (ok)
 				{
-					ok = false;
-					LatLon new_geo_ref_point = toGeographicCoords(projected_ref_point, &ok);
-					if (ok)
-					{
-						geographic_ref_point = new_geo_ref_point;
-						updateGridCompensation();
-						initDeclination();
-						initAuxiliaryScaleFactor();
-						emit projectionChanged();
-					}
+					geographic_ref_point = new_geo_ref_point;
+					has_geographic_ref_point = true;
+					updateGridCompensation();
+					initDeclination();
+					initAuxiliaryScaleFactor();
+					emit projectionChanged();
 				}
-				emit transformationChanged();
 			}
+			if (projected_ref_point != old_projected_ref_point)
+				emit transformationChanged();
 			return ok;
 		}
 	}
@@ -899,6 +918,7 @@ bool Georeferencing::setProjectedRefPoint(const QPointF& point, UpdateOption upd
 			if (ok && new_geo_ref_point != geographic_ref_point)
 			{
 				geographic_ref_point = new_geo_ref_point;
+				has_geographic_ref_point = true;
 				updateGridCompensation();
 				switch (update_parameters)
 				{
@@ -1017,7 +1037,7 @@ void Georeferencing::updateGridCompensation()
 bool Georeferencing::setGeographicRefPoint(LatLon lat_lon, UpdateOption update_parameters, bool keep_georeferencing)
 {
 	bool geo_ref_point_changed = geographic_ref_point != lat_lon;
-	if (geo_ref_point_changed || getState() == Geospatial)
+	if (geo_ref_point_changed || getState() == Geospatial || !has_geographic_ref_point)
 	{
 		geographic_ref_point = lat_lon;
 		
@@ -1044,8 +1064,9 @@ bool Georeferencing::setGeographicRefPoint(LatLon lat_lon, UpdateOption update_p
 			}
 			updateTransformation();
 		}
-		if (geo_ref_point_changed)
+		if (geo_ref_point_changed || !has_geographic_ref_point)
 		{
+			has_geographic_ref_point = true;
 			emit projectionChanged();
 		}
 		return ok;
@@ -1083,12 +1104,17 @@ void Georeferencing::initAuxiliaryScaleFactor()
 
 void Georeferencing::updateGrivation()
 {
-	setDeclination(declination);
+	if (has_declination)
+	{
+		double grivation = roundDeclination(declination - convergence);
+		setDeclinationAndGrivation(declination, grivation, false);
+	}
 }
 
 void Georeferencing::initDeclination()
 {
-	setGrivation(grivation);
+	if (has_declination)
+		setGrivation(grivation);
 }
 
 void Georeferencing::setTransformationDirectly(const QTransform& transform)
@@ -1099,6 +1125,16 @@ void Georeferencing::setTransformationDirectly(const QTransform& transform)
 		from_projected = to_projected.inverted();
 		emit transformationChanged();
 	}
+}
+
+void Georeferencing::clearGeographicParameters()
+{
+	has_geographic_ref_point = false;
+	has_declination = false;
+	auxiliary_scale_factor = 1.0;
+	emit projectionChanged();
+	emit declinationChanged();
+	emit auxiliaryScaleFactorChanged();
 }
 
 const QTransform& Georeferencing::mapToProjected() const
@@ -1165,17 +1201,20 @@ bool Georeferencing::setProjectedCRS(const QString& id, QString spec, std::vecto
 			{
 				if (getState() == Geospatial)
 					updateGridCompensation();
-				bool proj_ok = false;
-				QPointF new_projected_ref = toProjectedCoords(geographic_ref_point, &proj_ok);
-				if (proj_ok)
+				if (has_geographic_ref_point)
 				{
-					projected_ref_point = new_projected_ref;
-					updateGrivation();
-					updateCombinedScaleFactor();
-					updateTransformation();
+					bool proj_ok = false;
+					QPointF new_projected_ref = toProjectedCoords(geographic_ref_point, &proj_ok);
+					if (proj_ok)
+					{
+						projected_ref_point = new_projected_ref;
+						updateGrivation();
+						updateCombinedScaleFactor();
+						updateTransformation();
+					}
+					else
+						ok = false;
 				}
-				else
-					ok = false;
 			}
 			break;
 		case UpdateGeographicParameter:
@@ -1188,12 +1227,18 @@ bool Georeferencing::setProjectedCRS(const QString& id, QString spec, std::vecto
 					if (getState() == Geospatial)
 					{
 						updateGridCompensation();
-						setDeclinationAndGrivation(roundDeclination(grivation+convergence), grivation);
+						setDeclinationAndGrivation(roundDeclination(grivation+convergence), grivation, false);
 						initAuxiliaryScaleFactor();
 					}
 				}
 				else
 					ok = false;
+				if (has_declination)
+				{
+					has_declination = false;
+					emit declinationChanged();
+				}
+				has_geographic_ref_point = false;
 			}
 			break;
 		}
